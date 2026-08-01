@@ -26,7 +26,7 @@
 
 直接打開 https://dedeninis.github.io/my_ingredients/ 即可使用，不需要註冊或登入。
 
-手機建議用瀏覽器的「加到主畫面」，開啟時比較接近 App 的體驗。
+**手機建議用瀏覽器的「加到主畫面」安裝。**已具備 PWA 的 manifest 與 service worker，安裝後會以獨立視窗開啟（無網址列），且**斷網時仍可開啟並操作**——瀏覽、新增、修改、刪除、搜尋、採買與到期狀態都不需要網路（PRD 12）。只有雲端同步需要連線。
 
 本機開發時直接用瀏覽器打開 `index.html` 就行，不需要安裝任何東西或啟動伺服器。
 
@@ -177,7 +177,16 @@
 
 ## 技術架構
 
-單一 `index.html`，約 840 行，HTML／CSS／JS 全部內嵌。
+```
+index.html              App 本體，HTML／CSS／JS 全部內嵌
+sw.js                   Service worker，負責離線快取
+manifest.webmanifest    PWA 設定
+icon-192.png            圖示（由 tools/make-icons.py 產生）
+icon-512.png
+tools/make-icons.py     圖示產生腳本
+```
+
+`index.html` 約 990 行。
 
 - **無框架、無建置流程、無相依套件** —— 打開檔案就能跑
 - 單一 `setView()` 以 `renderers` 表分派各頁面
@@ -185,6 +194,10 @@
 - 確認對話框統一走 `askConfirm({ title, text, confirmLabel, onConfirm })`，每次重設全部文字
 
 這個選擇是刻意的：規模還小，額外的建置工具只會增加負擔。等到要接入 AI 或條碼掃描等外部相依時，再考慮模組化與打包。
+
+### 部署後要注意
+
+改動 `index.html` 後，**要把 `sw.js` 裡的 `CACHE` 版本號往上加**，否則已安裝的使用者可能繼續拿到舊版。頁面本身採 network-first，一般情況會自動更新，但版本號才是可靠的作法。
 
 ---
 
