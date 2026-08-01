@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f6f6f1" />
+  <title>我的冰箱｜食材管理</title>
+  <style>
+    :root {
+      --bg: #f6f6f1;
+      --surface: #ffffff;
+      --ink: #24332b;
+      --muted: #6b756f;
+      --line: #dde3dc;
+      --leaf: #2e6b4e;
+      --leaf-soft: #e6f0e9;
+      --sun: #f0a83a;
+      --sun-soft: #fff4d9;
+      --red: #b6473e;
+      --red-soft: #fbe8e5;
+      --shadow: 0 8px 26px rgba(38, 61, 48, .08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-rounded, "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { max-width: 720px; min-height: 100dvh; margin: auto; padding: 22px 16px 102px; }
+    .topbar { display: flex; justify-content: space-between; align-items: start; margin-bottom: 22px; }
+    .eyebrow { margin: 0 0 4px; color: var(--muted); font-size: .88rem; }
+    h1 { margin: 0; font-size: clamp(1.65rem, 6vw, 2.05rem); letter-spacing: -.04em; }
+    h2 { margin: 0; font-size: 1.08rem; letter-spacing: -.02em; }
+    .icon-button { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); }
+    .icon-button svg { width: 20px; height: 20px; }
+    .hero { padding: 18px; border-radius: 22px; background: var(--leaf); color: white; box-shadow: var(--shadow); }
+    .hero-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    .hero p { margin: 0 0 4px; opacity: .84; font-size: .86rem; }
+    .hero strong { display: block; font-size: 1.2rem; }
+    .hero .fridge { font-size: 2.25rem; }
+    .section { margin-top: 26px; }
+    .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; }
+    .text-button { padding: 0; border: 0; background: transparent; color: var(--leaf); font-weight: 700; }
+    .notice { border: 1px solid #f1d59f; background: var(--sun-soft); border-radius: 16px; overflow: hidden; }
+    .notice.empty { border-color: var(--line); background: var(--surface); }
+    .notice-item { display: flex; align-items: center; gap: 12px; padding: 14px; border-bottom: 1px solid rgba(149, 120, 55, .16); }
+    .notice-item:last-child { border-bottom: 0; }
+    .notice-icon { display: grid; place-items: center; width: 35px; height: 35px; border-radius: 12px; background: rgba(255,255,255,.55); }
+    .notice-main { flex: 1; min-width: 0; }
+    .notice-main b { display: block; }
+    .notice-main span { color: #765516; font-size: .86rem; }
+    .chevron { color: var(--muted); font-size: 1.35rem; }
+    .locations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .location { padding: 15px 10px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); color: var(--ink); text-align: left; box-shadow: 0 2px 8px rgba(38,61,48,.025); }
+    .location:hover, .location:focus-visible { border-color: var(--leaf); outline: none; }
+    .location .emoji { display: block; margin-bottom: 7px; font-size: 1.55rem; }
+    .location b, .location small { display: block; }
+    .location small { margin-top: 3px; color: var(--muted); }
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .quick-action { display: flex; align-items: center; gap: 10px; padding: 13px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); color: var(--ink); text-align: left; }
+    .quick-action.primary { border-color: var(--leaf); background: var(--leaf-soft); color: #1c5339; }
+    .quick-action .action-icon { flex: 0 0 auto; font-size: 1.25rem; }
+    .quick-action .action-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bottom-nav { position: fixed; z-index: 4; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: 10px max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.94); backdrop-filter: blur(12px); }
+    .nav-inner { display: grid; grid-template-columns: repeat(3, minmax(86px, 1fr)); width: min(720px, 100%); }
+    .nav-button { padding: 6px 2px; border: 0; background: transparent; color: var(--muted); font-size: .76rem; }
+    .nav-button span { display: block; margin-bottom: 3px; font-size: 1.15rem; }
+    .nav-button.active { color: var(--leaf); font-weight: 800; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .search { display: flex; align-items: center; gap: 9px; padding: 0 13px; height: 46px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); }
+    .filter-row { display: flex; gap: 8px; margin: 14px 0 16px; overflow-x: auto; padding-bottom: 2px; }
+    .filter { white-space: nowrap; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); }
+    .filter.active { border-color: var(--leaf); background: var(--leaf); color: white; }
+    .inventory-list { display: grid; gap: 10px; }
+    .food-card { display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 8px rgba(38,61,48,.025); }
+    .food-card button { all: unset; cursor: pointer; }
+    .food-icon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border-radius: 13px; background: var(--leaf-soft); font-size: 1.35rem; }
+    .food-info { flex: 1; min-width: 0; }
+    .food-info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .food-info span { display: block; margin-top: 4px; color: var(--muted); font-size: .84rem; }
+    .expiry { font-size: .78rem; font-weight: 800; text-align: right; }
+    .expiry.normal { color: var(--muted); }
+    .expiry.soon { color: #9c6712; }
+    .expiry.expired { color: var(--red); }
+    .empty-state { padding: 38px 20px; border: 1px dashed #bdc9c0; border-radius: 18px; color: var(--muted); text-align: center; background: rgba(255,255,255,.45); }
+    .empty-state .empty-icon { display: block; margin-bottom: 9px; font-size: 2.1rem; }
+    .form-card { padding: 18px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); }
+    .form-card > p { margin: 4px 0 20px; color: var(--muted); font-size: .9rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+    .field { display: grid; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: .86rem; font-weight: 700; }
+    input, select { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #cad4cc; border-radius: 11px; background: white; color: var(--ink); outline-color: var(--leaf); }
+    .field-error { min-height: 1.1em; color: var(--red); font-size: .78rem; }
+    .form-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .button { min-height: 46px; padding: 0 16px; border: 1px solid var(--leaf); border-radius: 12px; background: var(--leaf); color: white; font-weight: 800; }
+    .button.secondary { border-color: var(--line); background: white; color: var(--ink); }
+    .button.danger { border-color: var(--red); background: var(--red); }
+    .button.wide { flex: 1; }
+    .detail-panel { padding: 18px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); }
+    .detail-title { display: flex; gap: 12px; align-items: center; }
+    .detail-title .food-icon { width: 54px; height: 54px; font-size: 1.7rem; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+    .meta { padding: 11px; border-radius: 12px; background: #f5f8f4; }
+    .meta small, .meta b { display: block; }
+    .meta small { color: var(--muted); font-size: .76rem; }
+    .meta b { margin-top: 4px; }
+    dialog { width: min(420px, calc(100% - 32px)); padding: 0; border: 0; border-radius: 20px; box-shadow: 0 18px 60px rgba(0,0,0,.25); }
+    dialog::backdrop { background: rgba(20,35,27,.45); }
+    .dialog-content { padding: 22px; background: var(--surface); }
+    .dialog-content p { color: var(--muted); line-height: 1.6; }
+    .toast { position: fixed; z-index: 9; left: 50%; bottom: 84px; transform: translate(-50%, 14px); padding: 11px 15px; border-radius: 999px; background: #20372a; color: white; opacity: 0; pointer-events: none; transition: .22s ease; white-space: nowrap; box-shadow: var(--shadow); }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 380px) { .form-grid, .meta-grid { grid-template-columns: 1fr; } .quick-actions { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="homeView" class="view active" aria-labelledby="homeTitle">
+      <header class="topbar">
+        <div><p class="eyebrow" id="todayLabel"></p><h1 id="homeTitle">我的冰箱</h1></div>
+        <button class="icon-button" id="settingsButton" type="button" aria-label="設定">⚙️</button>
+      </header>
+      <section class="hero" aria-label="冰箱摘要"><div class="hero-row"><div><p>目前冰箱狀態</p><strong id="heroText">還沒有食材</strong></div><div class="fridge" aria-hidden="true">🧊</div></div></section>
+      <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
+      <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速新增</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button></div></section>
+    </section>
+
+    <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
+      <header class="topbar"><div><p class="eyebrow">本機庫存</p><h1 id="inventoryTitle">所有食材</h1></div><button class="icon-button" data-open-add type="button" aria-label="新增食材">＋</button></header>
+      <div class="search"><span aria-hidden="true">🔍</span><input id="searchInput" type="search" placeholder="搜尋食材名稱" autocomplete="off" /></div>
+      <div class="filter-row" role="group" aria-label="依位置篩選"><button class="filter active" type="button" data-filter="全部">全部</button><button class="filter" type="button" data-filter="冷藏">🧊 冷藏</button><button class="filter" type="button" data-filter="冷凍">❄️ 冷凍</button><button class="filter" type="button" data-filter="常溫">🏠 常溫</button></div>
+      <div id="inventoryList" class="inventory-list"></div>
+    </section>
+
+    <section id="addView" class="view" aria-labelledby="addTitle">
+      <header class="topbar"><div><p class="eyebrow" id="formEyebrow">手動建立</p><h1 id="addTitle">新增食材</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
+      <form id="foodForm" class="form-card" novalidate>
+        <p>填好基本資料後，就會儲存在這台裝置上。</p>
+        <input id="editingId" type="hidden" />
+        <div class="form-grid">
+          <div class="field full"><label for="name">食材名稱</label><input id="name" name="name" placeholder="例如：雞胸肉" required /><span class="field-error" id="nameError"></span></div>
+          <div class="field"><label for="category">食材類型</label><select id="category" name="category" required></select><span class="field-error" id="categoryError"></span></div>
+          <div class="field"><label for="storageLocation">存放位置</label><select id="storageLocation" name="storageLocation" required><option value="">請選擇</option><option>冷藏</option><option>冷凍</option><option>常溫</option></select><span class="field-error" id="storageLocationError"></span></div>
+          <div class="field"><label for="quantity">數量</label><input id="quantity" name="quantity" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="例如：2" required /><span class="field-error" id="quantityError"></span></div>
+          <div class="field"><label for="unit">單位</label><select id="unit" name="unit" required></select><span class="field-error" id="unitError"></span></div>
+          <div class="field full"><label for="expiryDate">保存期限</label><input id="expiryDate" name="expiryDate" type="date" required /><span class="field-error" id="expiryDateError"></span></div>
+        </div>
+        <div class="form-actions"><button class="button secondary wide" id="cancelForm" type="button">取消</button><button class="button wide" type="submit" id="saveButton">加入庫存</button></div>
+      </form>
+    </section>
+
+    <section id="detailView" class="view" aria-labelledby="detailViewTitle">
+      <header class="topbar"><div><p class="eyebrow">食材詳細資料</p><h1 id="detailViewTitle">查看食材</h1></div><button class="icon-button" data-open-inventory type="button" aria-label="回到庫存">←</button></header>
+      <div id="detailContent"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="主要導覽"><div class="nav-inner"><button class="nav-button active" data-nav="home" type="button"><span>🏠</span>冰箱</button><button class="nav-button" data-nav="inventory" type="button"><span>📦</span>庫存</button><button class="nav-button" data-nav="add" type="button"><span>➕</span>新增</button></div></nav>
+  <dialog id="confirmDialog"><div class="dialog-content"><h2 id="dialogTitle">確認操作</h2><p id="dialogText"></p><div class="form-actions"><button class="button secondary wide" id="dialogCancel" type="button">取消</button><button class="button danger wide" id="dialogConfirm" type="button">確定刪除</button></div></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = 'ingredient-manager-v1-items';
+    const categories = ['肉類', '蔬菜', '水果', '乳製品', '蛋類', '海鮮', '冷凍食品', '主食', '調味料', '罐頭／乾貨', '其他'];
+    const units = ['包', '盒', '瓶', '顆', '把', '份', '公斤', '公克', '毫升', '罐'];
+    const emojis = { '肉類': '🥩', '蔬菜': '🥬', '水果': '🍎', '乳製品': '🥛', '蛋類': '🥚', '海鮮': '🐟', '冷凍食品': '🍱', '主食': '🍚', '調味料': '🧂', '罐頭／乾貨': '🥫', '其他': '🥗' };
+    let activeFilter = '全部';
+    let selectedId = null;
+    let confirmAction = null;
+
+    function loadItems() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
+    function saveItems(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+    function isoToday() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+    function daysUntil(dateString) { const today = new Date(isoToday() + 'T00:00:00'); const date = new Date(dateString + 'T00:00:00'); return Math.round((date - today) / 86400000); }
+    function expiryInfo(item) { const days = daysUntil(item.expiryDate); if (days < 0) return { label: `已過期 ${Math.abs(days)} 天`, cls: 'expired', rank: 0 }; if (days === 0) return { label: '今天到期', cls: 'expired', rank: 1 }; if (days <= 3) return { label: days === 1 ? '明天到期' : `${days} 天後到期`, cls: 'soon', rank: 2 }; return { label: item.expiryDate.replaceAll('-', '/'), cls: 'normal', rank: 3 }; }
+    function formatDate(dateString) { return dateString.replaceAll('-', '/'); }
+    function sortItems(items) { return [...items].sort((a, b) => expiryInfo(a).rank - expiryInfo(b).rank || new Date(b.createdAt) - new Date(a.createdAt)); }
+    function showToast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => el.classList.remove('show'), 2400); }
+    function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char])); }
+
+    function setView(view) {
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      document.getElementById(view + 'View').classList.add('active');
+      document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.nav === view));
+      if (view === 'home') renderHome();
+      if (view === 'inventory') renderInventory();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderHome() {
+      const items = loadItems();
+      const today = new Intl.DateTimeFormat('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date());
+      document.getElementById('todayLabel').textContent = today;
+      document.getElementById('heroText').textContent = items.length ? `共有 ${items.length} 項食材` : '還沒有食材';
+      document.getElementById('countCold').textContent = `${items.filter(i => i.storageLocation === '冷藏').length} 項`;
+      document.getElementById('countFrozen').textContent = `${items.filter(i => i.storageLocation === '冷凍').length} 項`;
+      document.getElementById('countRoom').textContent = `${items.filter(i => i.storageLocation === '常溫').length} 項`;
+      const expiring = sortItems(items.filter(item => daysUntil(item.expiryDate) <= 3));
+      const container = document.getElementById('expiryNotice');
+      if (!expiring.length) { container.className = 'notice empty'; container.innerHTML = '<div class="notice-item"><div class="notice-icon">✨</div><div class="notice-main"><b>目前沒有即將到期食材</b><span>新增食材後，這裡會協助提醒你。</span></div></div>'; return; }
+      container.className = 'notice';
+      container.innerHTML = expiring.slice(0, 3).map(item => { const info = expiryInfo(item); return `<button class="notice-item" data-detail="${item.id}" type="button" style="width:100%;border-left:0;border-right:0;border-top:0;background:transparent;text-align:left"><div class="notice-icon">${emojis[item.category] || '🥗'}</div><div class="notice-main"><b>${escapeHtml(item.name)}</b><span>${info.label}</span></div><span class="chevron">›</span></button>`; }).join('');
+    }
+
+    function renderInventory() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      let items = loadItems();
+      if (activeFilter !== '全部') items = items.filter(item => item.storageLocation === activeFilter);
+      if (query) items = items.filter(item => item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query));
+      const list = document.getElementById('inventoryList');
+      if (!items.length) { list.innerHTML = `<div class="empty-state"><span class="empty-icon">${query ? '🔎' : '📦'}</span><b>${query ? '找不到相符食材' : '這裡還沒有食材'}</b><p>${query ? '換個關鍵字試試看。' : '從下方「新增」建立第一筆食材。'}</p></div>`; return; }
+      list.innerHTML = sortItems(items).map(item => { const info = expiryInfo(item); return `<article class="food-card"><button data-detail="${item.id}" type="button" class="food-icon" aria-label="查看 ${escapeHtml(item.name)} 詳細資料">${emojis[item.category] || '🥗'}</button><button data-detail="${item.id}" type="button" class="food-info"><b>${escapeHtml(item.name)}</b><span>${escapeHtml(item.category)} · ${escapeHtml(item.storageLocation)} · ${item.quantity} ${escapeHtml(item.unit)}</span></button><button data-detail="${item.id}" type="button" class="expiry ${info.cls}">${info.label}</button></article>`; }).join('');
+    }
+
+    function renderDetail() {
+      const item = loadItems().find(i => i.id === selectedId);
+      if (!item) { setView('inventory'); return; }
+      const info = expiryInfo(item);
+      document.getElementById('detailViewTitle').textContent = item.name;
+      document.getElementById('detailContent').innerHTML = `<article class="detail-panel"><div class="detail-title"><div class="food-icon">${emojis[item.category] || '🥗'}</div><div><h2>${escapeHtml(item.name)}</h2><div class="expiry ${info.cls}" style="text-align:left;margin-top:5px">${info.label}</div></div></div><div class="meta-grid"><div class="meta"><small>食材類型</small><b>${escapeHtml(item.category)}</b></div><div class="meta"><small>存放位置</small><b>${escapeHtml(item.storageLocation)}</b></div><div class="meta"><small>目前數量</small><b>${item.quantity} ${escapeHtml(item.unit)}</b></div><div class="meta"><small>保存期限</small><b>${formatDate(item.expiryDate)}</b></div></div><div class="form-actions"><button class="button secondary wide" data-edit="${item.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete="${item.id}" type="button">刪除</button></div></article>`;
+    }
+
+    function prepareForm(item = null) {
+      document.getElementById('foodForm').reset();
+      document.getElementById('editingId').value = item?.id || '';
+      document.getElementById('formEyebrow').textContent = item ? '修改庫存資料' : '手動建立';
+      document.getElementById('addTitle').textContent = item ? '編輯食材' : '新增食材';
+      document.getElementById('saveButton').textContent = item ? '儲存變更' : '加入庫存';
+      if (item) ['name', 'category', 'storageLocation', 'quantity', 'unit', 'expiryDate'].forEach(key => document.getElementById(key).value = item[key]);
+      document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+    }
+    function openAdd(item = null) { prepareForm(item); setView('add'); }
+    function openDetail(id) { selectedId = id; renderDetail(); setView('detail'); }
+    function validateForm(data) {
+      let valid = true;
+      const labels = { name: '請輸入食材名稱', category: '請選擇食材類型', storageLocation: '請選擇存放位置', quantity: '請輸入大於 0 的數量', unit: '請選擇單位', expiryDate: '請選擇保存期限' };
+      Object.entries(labels).forEach(([key, message]) => { const error = !data[key] || (key === 'quantity' && Number(data[key]) <= 0); document.getElementById(key + 'Error').textContent = error ? message : ''; if (error) valid = false; });
+      return valid;
+    }
+
+    function initializeOptions() {
+      const category = document.getElementById('category'); const unit = document.getElementById('unit');
+      category.innerHTML = '<option value="">請選擇</option>' + categories.map(x => `<option>${x}</option>`).join('');
+      unit.innerHTML = '<option value="">請選擇</option>' + units.map(x => `<option>${x}</option>`).join('');
+    }
+    function seedDemo() {
+      // Keep first launch clean. Demo data intentionally not created.
+    }
+
+    document.addEventListener('click', event => {
+      const detail = event.target.closest('[data-detail]'); if (detail) return openDetail(detail.dataset.detail);
+      const edit = event.target.closest('[data-edit]'); if (edit) return openAdd(loadItems().find(i => i.id === edit.dataset.edit));
+      const del = event.target.closest('[data-delete]'); if (del) return askDelete(del.dataset.delete);
+      const loc = event.target.closest('[data-location]'); if (loc) { activeFilter = loc.dataset.location; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.filter === activeFilter)); return setView('inventory'); }
+      if (event.target.closest('[data-open-add]')) return openAdd();
+      if (event.target.closest('[data-open-inventory]')) return setView('inventory');
+      if (event.target.closest('[data-go-home]')) return setView('home');
+      const nav = event.target.closest('[data-nav]'); if (nav) { if (nav.dataset.nav === 'add') openAdd(); else setView(nav.dataset.nav); }
+    });
+    document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => { activeFilter = button.dataset.filter; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b === button)); renderInventory(); }));
+    document.getElementById('searchInput').addEventListener('input', renderInventory);
+    document.getElementById('cancelForm').addEventListener('click', () => setView('inventory'));
+    document.getElementById('foodForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const raw = Object.fromEntries(new FormData(event.currentTarget));
+      if (!validateForm(raw)) return;
+      const items = loadItems(); const id = raw.editingId || crypto.randomUUID();
+      const item = { id, name: raw.name.trim(), category: raw.category, storageLocation: raw.storageLocation, quantity: Number(raw.quantity), unit: raw.unit, expiryDate: raw.expiryDate, createdAt: raw.editingId ? items.find(i => i.id === id)?.createdAt || new Date().toISOString() : new Date().toISOString(), updatedAt: new Date().toISOString(), source: 'manual' };
+      const index = items.findIndex(i => i.id === id); if (index >= 0) items[index] = item; else items.push(item); saveItems(items); showToast(index >= 0 ? '食材資料已更新' : '已加入冰箱'); selectedId = id; setView('inventory');
+    });
+    function askDelete(id) { confirmAction = () => { saveItems(loadItems().filter(i => i.id !== id)); document.getElementById('confirmDialog').close(); showToast('已刪除食材'); setView('inventory'); }; document.getElementById('dialogTitle').textContent = '確定刪除這項食材？'; document.getElementById('dialogText').textContent = '刪除後無法復原，資料會從這台裝置移除。'; document.getElementById('confirmDialog').showModal(); }
+    document.getElementById('dialogCancel').addEventListener('click', () => document.getElementById('confirmDialog').close());
+    document.getElementById('dialogConfirm').addEventListener('click', () => confirmAction?.());
+    document.getElementById('settingsButton').addEventListener('click', () => showToast('設定頁將在下一階段加入'));
+    initializeOptions(); seedDemo(); renderHome();
+  </script>
+</body>
+</html>

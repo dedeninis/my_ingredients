@@ -1,0 +1,7 @@
+# Local browser inspection files
+.chrome-check/
+mobile-preview.png
+
+# Codex workspace metadata
+.agents/
+.codex/
