@@ -4,7 +4,7 @@
 
 **線上版本**：https://dedeninis.github.io/my_ingredients/
 
-規格依據：[食材管理App_V1.0_產品規格文件.md](食材管理App_V1.0_產品規格文件.md)
+規格依據：[食材管理App_V1.0_產品規格文件.md](食材管理App_V1.0_產品規格文件.md)｜待辦事項：[TODO.md](TODO.md)
 
 ---
 
