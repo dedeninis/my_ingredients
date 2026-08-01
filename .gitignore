@@ -5,3 +5,6 @@ mobile-preview.png
 # Codex workspace metadata
 .agents/
 .codex/
+
+# Claude Code workspace metadata
+.claude/

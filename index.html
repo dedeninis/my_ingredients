@@ -29,7 +29,7 @@
       color: var(--ink);
       font-family: ui-rounded, "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
     }
-    button, input, select { font: inherit; }
+    button, input, select, textarea { font: inherit; }
     button { cursor: pointer; }
     .app { max-width: 720px; min-height: 100dvh; margin: auto; padding: 22px 16px 102px; }
     .topbar { display: flex; justify-content: space-between; align-items: start; margin-bottom: 22px; }
@@ -48,7 +48,7 @@
     .text-button { padding: 0; border: 0; background: transparent; color: var(--leaf); font-weight: 700; }
     .notice { border: 1px solid #f1d59f; background: var(--sun-soft); border-radius: 16px; overflow: hidden; }
     .notice.empty { border-color: var(--line); background: var(--surface); }
-    .notice-item { display: flex; align-items: center; gap: 12px; padding: 14px; border-bottom: 1px solid rgba(149, 120, 55, .16); }
+    .notice-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border: 0; border-bottom: 1px solid rgba(149, 120, 55, .16); background: transparent; color: inherit; text-align: left; }
     .notice-item:last-child { border-bottom: 0; }
     .notice-icon { display: grid; place-items: center; width: 35px; height: 35px; border-radius: 12px; background: rgba(255,255,255,.55); }
     .notice-main { flex: 1; min-width: 0; }
@@ -57,7 +57,8 @@
     .chevron { color: var(--muted); font-size: 1.35rem; }
     .locations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .location { padding: 15px 10px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); color: var(--ink); text-align: left; box-shadow: 0 2px 8px rgba(38,61,48,.025); }
-    .location:hover, .location:focus-visible { border-color: var(--leaf); outline: none; }
+    .location:hover { border-color: var(--leaf); }
+    .location:focus-visible { border-color: var(--leaf); outline: 2px solid var(--leaf); outline-offset: 3px; }
     .location .emoji { display: block; margin-bottom: 7px; font-size: 1.55rem; }
     .location b, .location small { display: block; }
     .location small { margin-top: 3px; color: var(--muted); }
@@ -67,7 +68,7 @@
     .quick-action .action-icon { flex: 0 0 auto; font-size: 1.25rem; }
     .quick-action .action-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bottom-nav { position: fixed; z-index: 4; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: 10px max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.94); backdrop-filter: blur(12px); }
-    .nav-inner { display: grid; grid-template-columns: repeat(3, minmax(86px, 1fr)); width: min(720px, 100%); }
+    .nav-inner { display: grid; grid-template-columns: repeat(4, minmax(70px, 1fr)); width: min(720px, 100%); }
     .nav-button { padding: 6px 2px; border: 0; background: transparent; color: var(--muted); font-size: .76rem; }
     .nav-button span { display: block; margin-bottom: 3px; font-size: 1.15rem; }
     .nav-button.active { color: var(--leaf); font-weight: 800; }
@@ -81,6 +82,7 @@
     .inventory-list { display: grid; gap: 10px; }
     .food-card { display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 8px rgba(38,61,48,.025); }
     .food-card button { all: unset; cursor: pointer; }
+    .food-card button:focus-visible { outline: 2px solid var(--leaf); outline-offset: 3px; border-radius: 10px; }
     .food-icon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border-radius: 13px; background: var(--leaf-soft); font-size: 1.35rem; }
     .food-info { flex: 1; min-width: 0; }
     .food-info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -97,7 +99,9 @@
     .field { display: grid; gap: 7px; }
     .field.full { grid-column: 1 / -1; }
     label { font-size: .86rem; font-weight: 700; }
-    input, select { width: 100%; height: 44px; padding: 0 11px; border: 1px solid #cad4cc; border-radius: 11px; background: white; color: var(--ink); outline-color: var(--leaf); }
+    input, select, textarea { width: 100%; border: 1px solid #cad4cc; border-radius: 11px; background: white; color: var(--ink); outline-color: var(--leaf); }
+    input, select { height: 44px; padding: 0 11px; }
+    textarea { min-height: 76px; padding: 10px 11px; resize: vertical; }
     .field-error { min-height: 1.1em; color: var(--red); font-size: .78rem; }
     .form-actions { display: flex; gap: 10px; margin-top: 18px; }
     .button { min-height: 46px; padding: 0 16px; border: 1px solid var(--leaf); border-radius: 12px; background: var(--leaf); color: white; font-weight: 800; }
@@ -112,6 +116,31 @@
     .meta small, .meta b { display: block; }
     .meta small { color: var(--muted); font-size: .76rem; }
     .meta b { margin-top: 4px; }
+    .shopping-list { display: grid; gap: 10px; margin-top: 18px; }
+    .shopping-card { display: flex; gap: 12px; align-items: flex-start; padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+    .shopping-card.is-complete { opacity: .68; }
+    .shopping-check { width: 21px; height: 21px; margin: 3px 0 0; accent-color: var(--leaf); }
+    .shopping-main { flex: 1; min-width: 0; }
+    .shopping-main b, .shopping-main span { display: block; }
+    .shopping-main b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .shopping-main span { margin-top: 4px; color: var(--muted); font-size: .84rem; }
+    .shopping-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    .small-button { min-height: 34px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--ink); font-size: .78rem; font-weight: 700; }
+    .small-button.convert { border-color: var(--leaf); background: var(--leaf-soft); color: #1c5339; }
+    .settings-group { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+    .settings-group h2 { margin-bottom: 12px; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+    .setting-row:first-of-type { border-top: 0; padding-top: 0; }
+    .setting-row p { margin: 4px 0 0; color: var(--muted); font-size: .84rem; }
+    .setting-row input[type="checkbox"] { width: 42px; height: 24px; accent-color: var(--leaf); }
+    .warning-note { margin: 12px 0 0; padding: 11px 13px; border: 1px solid #f1d59f; border-radius: 12px; background: var(--sun-soft); color: #765516; font-size: .84rem; line-height: 1.6; }
+    .category-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .category-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 999px; background: var(--leaf-soft); color: #1c5339; font-size: .84rem; }
+    .category-chip button { padding: 0 2px; border: 0; background: transparent; color: inherit; font-weight: 800; }
+    .category-chip.editing { gap: 6px; padding: 6px 8px; }
+    .category-chip.editing input { width: 8.5rem; height: 34px; }
+    .inline-form { display: flex; gap: 8px; }
+    .inline-form input { flex: 1; }
     dialog { width: min(420px, calc(100% - 32px)); padding: 0; border: 0; border-radius: 20px; box-shadow: 0 18px 60px rgba(0,0,0,.25); }
     dialog::backdrop { background: rgba(20,35,27,.45); }
     .dialog-content { padding: 22px; background: var(--surface); }
@@ -131,7 +160,7 @@
       <section class="hero" aria-label="冰箱摘要"><div class="hero-row"><div><p>目前冰箱狀態</p><strong id="heroText">還沒有食材</strong></div><div class="fridge" aria-hidden="true">🧊</div></div></section>
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
-      <section class="section"><div class="section-head"><h2>快速新增</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button></div></section>
     </section>
 
     <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
@@ -144,8 +173,9 @@
     <section id="addView" class="view" aria-labelledby="addTitle">
       <header class="topbar"><div><p class="eyebrow" id="formEyebrow">手動建立</p><h1 id="addTitle">新增食材</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
       <form id="foodForm" class="form-card" novalidate>
-        <p>填好基本資料後，就會儲存在這台裝置上。</p>
-        <input id="editingId" type="hidden" />
+        <p id="formHint">填好基本資料後，就會儲存在這台裝置上。</p>
+        <input id="editingId" name="editingId" type="hidden" />
+        <input id="sourceShoppingId" name="sourceShoppingId" type="hidden" />
         <div class="form-grid">
           <div class="field full"><label for="name">食材名稱</label><input id="name" name="name" placeholder="例如：雞胸肉" required /><span class="field-error" id="nameError"></span></div>
           <div class="field"><label for="category">食材類型</label><select id="category" name="category" required></select><span class="field-error" id="categoryError"></span></div>
@@ -162,126 +192,649 @@
       <header class="topbar"><div><p class="eyebrow">食材詳細資料</p><h1 id="detailViewTitle">查看食材</h1></div><button class="icon-button" data-open-inventory type="button" aria-label="回到庫存">←</button></header>
       <div id="detailContent"></div>
     </section>
+
+    <section id="shoppingView" class="view" aria-labelledby="shoppingTitle">
+      <header class="topbar"><div><p class="eyebrow">本機採買</p><h1 id="shoppingTitle">採買清單</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
+      <form id="shoppingForm" class="form-card" novalidate>
+        <p>勾選已買到的項目後，可以再確認保存期限並轉入庫存。</p>
+        <input id="editingShoppingId" name="editingShoppingId" type="hidden" />
+        <div class="form-grid">
+          <div class="field full"><label for="shoppingName">採買項目</label><input id="shoppingName" name="shoppingName" placeholder="例如：雞蛋" required /><span class="field-error" id="shoppingNameError"></span></div>
+          <div class="field"><label for="shoppingQuantity">數量</label><input id="shoppingQuantity" name="shoppingQuantity" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="例如：2" required /><span class="field-error" id="shoppingQuantityError"></span></div>
+          <div class="field"><label for="shoppingUnit">單位</label><select id="shoppingUnit" name="shoppingUnit" required></select><span class="field-error" id="shoppingUnitError"></span></div>
+          <div class="field full"><label for="shoppingNote">備註（選填）</label><textarea id="shoppingNote" name="shoppingNote" placeholder="例如：買大盒"></textarea></div>
+        </div>
+        <div class="form-actions"><button class="button secondary wide" id="cancelShoppingForm" type="button">清空欄位</button><button class="button wide" type="submit" id="saveShoppingButton">加入清單</button></div>
+      </form>
+      <div id="shoppingList" class="shopping-list"></div>
+    </section>
+
+    <section id="settingsView" class="view" aria-labelledby="settingsTitle">
+      <header class="topbar"><div><p class="eyebrow">本機偏好</p><h1 id="settingsTitle">設定</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
+      <section class="settings-group">
+        <h2>到期提醒</h2>
+        <div class="setting-row"><div><b>啟用到期提醒</b><p id="reminderHint"></p></div><input id="remindersEnabled" type="checkbox" aria-label="啟用到期提醒" /></div>
+        <div class="setting-row"><div><b>系統通知權限</b><p id="permissionHint"></p></div><button class="button secondary" id="requestPermissionButton" type="button">允許通知</button></div>
+        <p class="warning-note">ℹ️ 網頁版只能在你開啟這個頁面時送出提醒，無法在頁面關閉時主動通知。關閉提醒不影響首頁與清單的到期狀態顯示。</p>
+      </section>
+      <section class="settings-group">
+        <h2>食材類型</h2>
+        <div class="inline-form"><input id="newCategory" type="text" placeholder="輸入自訂類型" aria-label="新增自訂類型" /><button class="button" id="addCategoryButton" type="button">新增</button></div>
+        <span class="field-error" id="categoryManageError"></span>
+        <div id="categoryList" class="category-list"></div>
+      </section>
+      <section class="settings-group">
+        <h2>資料管理</h2>
+        <div class="setting-row"><div><b>庫存資料</b><p id="inventoryDataCount"></p></div><button class="button danger" id="clearInventoryButton" type="button">清除庫存</button></div>
+        <div class="setting-row"><div><b>採買清單</b><p id="shoppingDataCount"></p></div><button class="button danger" id="clearShoppingButton" type="button">清除清單</button></div>
+        <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。</p>
+      </section>
+      <section class="settings-group">
+        <h2>雲端同步（GitHub Gist）</h2>
+        <div class="form-grid">
+          <div class="field full"><label for="gistId">Gist ID</label><input id="gistId" type="text" placeholder="例如：a1b2c3d4e5f6..." autocomplete="off" spellcheck="false" /></div>
+          <div class="field full"><label for="gistToken">存取權杖 Token</label><input id="gistToken" type="password" placeholder="貼上只勾選 gist 權限的 token" autocomplete="off" spellcheck="false" /></div>
+        </div>
+        <div class="form-actions"><button class="button secondary wide" id="saveSyncButton" type="button">儲存設定</button><button class="button wide" id="syncNowButton" type="button">立即同步</button></div>
+        <div class="setting-row"><div><b>同步狀態</b><p id="syncStatus"></p></div><button class="small-button" id="clearSyncButton" type="button">清除設定</button></div>
+        <p class="warning-note">⚠️ Secret Gist <b>不等於私密</b> —— 任何取得該網址的人都能看到你的庫存內容。權杖只存在這台裝置，不會上傳，換裝置需要重新貼一次。兩台裝置同時修改時會跳出選擇，不會自動覆蓋。</p>
+      </section>
+      <section class="settings-group">
+        <h2>關於</h2>
+        <div class="setting-row"><div><b>版本</b><p>V1.0（本機版）</p></div></div>
+        <div class="setting-row"><div><b>隱私說明</b><p>庫存、採買清單與偏好設定都保存在這台裝置的本機儲存空間，不需要帳號，也不會上傳到伺服器。</p></div></div>
+      </section>
+    </section>
   </main>
 
-  <nav class="bottom-nav" aria-label="主要導覽"><div class="nav-inner"><button class="nav-button active" data-nav="home" type="button"><span>🏠</span>冰箱</button><button class="nav-button" data-nav="inventory" type="button"><span>📦</span>庫存</button><button class="nav-button" data-nav="add" type="button"><span>➕</span>新增</button></div></nav>
-  <dialog id="confirmDialog"><div class="dialog-content"><h2 id="dialogTitle">確認操作</h2><p id="dialogText"></p><div class="form-actions"><button class="button secondary wide" id="dialogCancel" type="button">取消</button><button class="button danger wide" id="dialogConfirm" type="button">確定刪除</button></div></div></dialog>
+  <nav class="bottom-nav" aria-label="主要導覽"><div class="nav-inner"><button class="nav-button active" data-nav="home" type="button"><span>🏠</span>冰箱</button><button class="nav-button" data-nav="inventory" type="button"><span>📦</span>庫存</button><button class="nav-button" data-nav="add" type="button"><span>➕</span>新增</button><button class="nav-button" data-nav="shopping" type="button"><span>🛒</span>採買</button></div></nav>
+  <dialog id="confirmDialog"><div class="dialog-content"><h2 id="dialogTitle">確認操作</h2><p id="dialogText"></p><div class="form-actions"><button class="button secondary wide" id="dialogCancel" type="button">取消</button><button class="button danger wide" id="dialogConfirm" type="button">確定</button></div></div></dialog>
+  <dialog id="conflictDialog"><div class="dialog-content"><h2>本機與雲端都有變更</h2><p id="conflictText"></p><div class="form-actions"><button class="button secondary wide" id="conflictUseRemote" type="button">用雲端覆蓋本機</button><button class="button wide" id="conflictUseLocal" type="button">用本機覆蓋雲端</button></div><div class="form-actions"><button class="button secondary wide" id="conflictCancel" type="button">先不同步</button></div></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     const STORAGE_KEY = 'ingredient-manager-v1-items';
-    const categories = ['肉類', '蔬菜', '水果', '乳製品', '蛋類', '海鮮', '冷凍食品', '主食', '調味料', '罐頭／乾貨', '其他'];
+    const SHOPPING_KEY = 'ingredient-manager-v1-shopping-items';
+    const SETTINGS_KEY = 'ingredient-manager-v1-settings';
+    const REMINDER_KEY = 'ingredient-manager-v1-reminders';
+    // 同步設定含存取權杖，只留在這台裝置，永遠不會被寫進同步內容。
+    const SYNC_KEY = 'ingredient-manager-v1-sync';
+    const GIST_FILENAME = 'my-ingredients.json';
+    const DEFAULT_CATEGORIES = [
+      { name: '肉類', emoji: '🥩' }, { name: '蔬菜', emoji: '🥬' }, { name: '水果', emoji: '🍎' },
+      { name: '乳製品', emoji: '🥛' }, { name: '蛋類', emoji: '🥚' }, { name: '海鮮', emoji: '🐟' },
+      { name: '冷凍食品', emoji: '🍱' }, { name: '主食', emoji: '🍚' }, { name: '調味料', emoji: '🧂' },
+      { name: '罐頭／乾貨', emoji: '🥫' }, { name: '其他', emoji: '🥗' }
+    ];
     const units = ['包', '盒', '瓶', '顆', '把', '份', '公斤', '公克', '毫升', '罐'];
-    const emojis = { '肉類': '🥩', '蔬菜': '🥬', '水果': '🍎', '乳製品': '🥛', '蛋類': '🥚', '海鮮': '🐟', '冷凍食品': '🍱', '主食': '🍚', '調味料': '🧂', '罐頭／乾貨': '🥫', '其他': '🥗' };
+    const sourceLabels = { manual: '手動新增', photo_ai: '拍照辨識', barcode: '條碼掃描', voice: '語音輸入', shopping_draft: '採買清單轉入' };
     let activeFilter = '全部';
     let selectedId = null;
     let confirmAction = null;
+    let renamingCategory = null;
+    let settings = loadSettings();
+    let syncState = loadSyncState();
+    let applyingRemote = false;
+    let syncing = false;
+    let pendingRemote = null;
+    let pushTimer = null;
 
-    function loadItems() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
-    function saveItems(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+    const $ = id => document.getElementById(id);
+
+    function readList(key) { try { const value = JSON.parse(localStorage.getItem(key)); return Array.isArray(value) ? value : []; } catch { return []; } }
+    function loadItems() { return readList(STORAGE_KEY); }
+    function saveItems(items) { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); markDataChanged(); }
+    function loadShoppingItems() { return readList(SHOPPING_KEY); }
+    function saveShoppingItems(items) { localStorage.setItem(SHOPPING_KEY, JSON.stringify(items)); markDataChanged(); }
+    function loadReminders() { return readList(REMINDER_KEY); }
+    function saveReminders(reminders) { localStorage.setItem(REMINDER_KEY, JSON.stringify(reminders)); }
+    function loadSettings() {
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch { stored = null; }
+      const saved = Array.isArray(stored?.categories)
+        ? stored.categories.filter(entry => entry && typeof entry.name === 'string' && entry.name.trim())
+          .map(entry => ({ name: entry.name, emoji: entry.emoji || '🥗', custom: !!entry.custom }))
+        : [];
+      return {
+        remindersEnabled: stored?.remindersEnabled !== false,
+        categories: saved.length ? saved : DEFAULT_CATEGORIES.map(entry => ({ ...entry, custom: false }))
+      };
+    }
+    function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); markDataChanged(); }
+    function categoryNames() { return settings.categories.map(entry => entry.name); }
+    function emojiFor(category) { return settings.categories.find(entry => entry.name === category)?.emoji || '🥗'; }
+
     function isoToday() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
     function daysUntil(dateString) { const today = new Date(isoToday() + 'T00:00:00'); const date = new Date(dateString + 'T00:00:00'); return Math.round((date - today) / 86400000); }
     function expiryInfo(item) { const days = daysUntil(item.expiryDate); if (days < 0) return { label: `已過期 ${Math.abs(days)} 天`, cls: 'expired', rank: 0 }; if (days === 0) return { label: '今天到期', cls: 'expired', rank: 1 }; if (days <= 3) return { label: days === 1 ? '明天到期' : `${days} 天後到期`, cls: 'soon', rank: 2 }; return { label: item.expiryDate.replaceAll('-', '/'), cls: 'normal', rank: 3 }; }
     function formatDate(dateString) { return dateString.replaceAll('-', '/'); }
     function sortItems(items) { return [...items].sort((a, b) => expiryInfo(a).rank - expiryInfo(b).rank || new Date(b.createdAt) - new Date(a.createdAt)); }
-    function showToast(message) { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => el.classList.remove('show'), 2400); }
+    function showToast(message) { const el = $('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => el.classList.remove('show'), 2400); }
     function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char])); }
 
+    // ---- 雲端同步（Secret Gist）----
+    // gistId 與 token 只存在這台裝置，不會被放進同步內容，也不該出現在原始碼裡。
+    function loadSyncState() {
+      let stored = {};
+      try { stored = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { stored = {}; }
+      return {
+        gistId: typeof stored.gistId === 'string' ? stored.gistId : '',
+        token: typeof stored.token === 'string' ? stored.token : '',
+        localUpdatedAt: stored.localUpdatedAt || null,
+        lastSyncedAt: stored.lastSyncedAt || null,
+        remoteUpdatedAt: stored.remoteUpdatedAt || null,
+        lastError: stored.lastError || null
+      };
+    }
+    function saveSyncState() { localStorage.setItem(SYNC_KEY, JSON.stringify(syncState)); }
+    function syncConfigured() { return !!(syncState.gistId && syncState.token); }
+    function hasLocalChanges() { return !!syncState.localUpdatedAt && (!syncState.lastSyncedAt || syncState.localUpdatedAt > syncState.lastSyncedAt); }
+
+    // 所有寫入都會經過 saveItems / saveShoppingItems / saveSettings，統一在這裡標記待同步。
+    function markDataChanged() {
+      if (applyingRemote || !syncState) return;
+      syncState.localUpdatedAt = new Date().toISOString();
+      saveSyncState();
+      updateSyncStatusText();
+      if (!syncConfigured()) return;
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(() => syncNow({ silent: true }), 2500);
+    }
+
+    function buildPayload() {
+      return { version: 1, updatedAt: syncState.localUpdatedAt || new Date().toISOString(), items: loadItems(), shoppingItems: loadShoppingItems(), settings };
+    }
+    function applyPayload(payload) {
+      applyingRemote = true;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.isArray(payload.items) ? payload.items : []));
+        localStorage.setItem(SHOPPING_KEY, JSON.stringify(Array.isArray(payload.shoppingItems) ? payload.shoppingItems : []));
+        if (payload.settings) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload.settings)); settings = loadSettings(); }
+      } finally { applyingRemote = false; }
+      syncReminders();
+      refreshCategoryOptions();
+    }
+    function renderAll() { renderHome(); renderInventory(); renderShopping(); renderSettings(); }
+
+    async function gistRequest(method, body) {
+      const response = await fetch(`https://api.github.com/gists/${encodeURIComponent(syncState.gistId)}`, {
+        method,
+        headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${syncState.token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      if (!response.ok) throw new Error(
+        response.status === 401 ? '存取權杖無效或已過期'
+        : response.status === 404 ? '找不到這個 Gist，請確認 ID 與權杖的 gist 權限'
+        : response.status === 403 ? 'GitHub 拒絕存取或已達流量上限'
+        : `GitHub 回應 ${response.status}`);
+      return response.json();
+    }
+    async function fetchRemotePayload() {
+      const gist = await gistRequest('GET');
+      const file = gist.files?.[GIST_FILENAME];
+      if (!file) return null;
+      const content = file.truncated ? await (await fetch(file.raw_url)).text() : file.content;
+      if (!content?.trim()) return null;
+      let parsed;
+      try { parsed = JSON.parse(content); } catch { throw new Error('雲端資料格式無法解析'); }
+      // 剛建立的空 Gist（例如內容只有 {}）視為尚無雲端資料，首次同步直接上傳，不觸發衝突。
+      if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.items)) return null;
+      return parsed;
+    }
+    async function pushPayload() {
+      const payload = buildPayload();
+      await gistRequest('PATCH', { files: { [GIST_FILENAME]: { content: JSON.stringify(payload, null, 2) } } });
+      syncState.remoteUpdatedAt = payload.updatedAt;
+      syncState.lastSyncedAt = new Date().toISOString();
+      saveSyncState();
+    }
+    function adoptRemote(payload) {
+      applyPayload(payload);
+      // 本機與上次同步用同一個時間戳，套用後就不該再被視為待上傳；
+      // 直接沿用遠端時間戳會在對方時鐘較快時誤判成有變更。
+      const stamp = new Date().toISOString();
+      syncState.remoteUpdatedAt = payload.updatedAt || null;
+      syncState.localUpdatedAt = stamp;
+      syncState.lastSyncedAt = stamp;
+      saveSyncState();
+      renderAll();
+    }
+
+    async function syncNow({ silent = false } = {}) {
+      if (!syncConfigured()) { if (!silent) showToast('請先填入 Gist ID 與存取權杖'); return; }
+      if (syncing) return;
+      syncing = true; clearTimeout(pushTimer); updateSyncStatusText();
+      try {
+        const remote = await fetchRemotePayload();
+        const remoteChanged = !!remote && remote.updatedAt !== syncState.remoteUpdatedAt;
+        if (!remote) { await pushPayload(); if (!silent) showToast('已上傳到雲端'); }
+        else if (remoteChanged && hasLocalChanges()) {
+          // 兩邊都改過：不靜默覆蓋，交給使用者決定。
+          pendingRemote = remote;
+          $('conflictText').textContent = `這台裝置最後修改於 ${formatDateTime(syncState.localUpdatedAt)}，雲端最後修改於 ${formatDateTime(remote.updatedAt)}。請選擇要保留哪一份，另一份會被覆蓋。`;
+          $('conflictDialog').showModal();
+        }
+        else if (remoteChanged) { adoptRemote(remote); if (!silent) showToast('已從雲端更新'); }
+        else if (hasLocalChanges()) { await pushPayload(); if (!silent) showToast('已上傳到雲端'); }
+        else if (!silent) showToast('資料已是最新');
+        syncState.lastError = null;
+      } catch (error) {
+        syncState.lastError = error.message;
+        if (!silent) showToast(`同步失敗：${error.message}`);
+      } finally {
+        syncing = false; saveSyncState(); updateSyncStatusText();
+      }
+    }
+
+    function formatDateTime(value) { return value ? new Date(value).toLocaleString('zh-TW', { dateStyle: 'short', timeStyle: 'short' }) : '—'; }
+    function updateSyncStatusText() {
+      const el = $('syncStatus');
+      if (!el) return;
+      el.textContent = syncing ? '同步中…'
+        : !syncConfigured() ? '尚未設定，資料只會留在這台裝置。'
+        : syncState.lastError ? `上次同步失敗：${syncState.lastError}`
+        : hasLocalChanges() ? `有尚未上傳的變更（上次同步 ${formatDateTime(syncState.lastSyncedAt)}）`
+        : `已同步（${formatDateTime(syncState.lastSyncedAt)}）`;
+    }
+
+    // ---- 到期提醒（PRD 11）----
+    // 網頁版限制：只能在使用者開啟頁面時送出通知，無法在頁面關閉時喚醒裝置。
+    function addDays(dateString, amount) { const d = new Date(dateString + 'T00:00:00'); d.setDate(d.getDate() + amount); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+    function notificationSupported() { return typeof Notification !== 'undefined'; }
+    function notificationPermission() { return notificationSupported() ? Notification.permission : 'unsupported'; }
+
+    // PRD 11.1：新增、修改或刪除食材時，同步建立、更新或取消對應的提醒排程。
+    function syncReminders() {
+      const previous = loadReminders();
+      const reminders = [];
+      loadItems().forEach(item => {
+        [['three_days_before', addDays(item.expiryDate, -3)], ['expiry_day', item.expiryDate]].forEach(([reminderType, scheduledAt]) => {
+          const prior = previous.find(entry => entry.inventoryItemId === item.id && entry.reminderType === reminderType);
+          // 保存期限被改過就重新排程，否則沿用既有狀態避免重複通知。
+          const status = prior && prior.scheduledAt === scheduledAt ? prior.status : 'scheduled';
+          reminders.push({ id: prior?.id || crypto.randomUUID(), inventoryItemId: item.id, reminderType, scheduledAt, status });
+        });
+      });
+      saveReminders(reminders);
+      return reminders;
+    }
+
+    function reminderMessage(item) {
+      const days = daysUntil(item.expiryDate);
+      if (days === 0) return `食材提醒：${item.name}今天到期，請確認是否需要使用。`;
+      return `食材提醒：${item.name}將於 ${days} 天後到期，建議優先使用。`;
+    }
+
+    // 排程日到了才送出；已過期的食材不再通知，改由首頁與清單優先顯示（PRD 11.1）。
+    function deliverDueReminders() {
+      if (!settings.remindersEnabled || notificationPermission() !== 'granted') return 0;
+      const today = isoToday();
+      const items = loadItems();
+      const reminders = syncReminders();
+      // 依食材分組：期限剩不到 3 天時兩筆排程會同時到期，一項食材一次只送一則。
+      const due = new Map();
+      reminders.forEach(reminder => {
+        if (reminder.status !== 'scheduled' || reminder.scheduledAt > today) return;
+        if (!due.has(reminder.inventoryItemId)) due.set(reminder.inventoryItemId, []);
+        due.get(reminder.inventoryItemId).push(reminder);
+      });
+      let sent = 0;
+      let dirty = false;
+      due.forEach((entries, itemId) => {
+        const item = items.find(entry => entry.id === itemId);
+        if (!item) return;
+        if (daysUntil(item.expiryDate) < 0) { entries.forEach(entry => entry.status = 'cancelled'); dirty = true; return; }
+        try {
+          new Notification('🧊 我的冰箱', { body: reminderMessage(item), tag: itemId });
+          entries.forEach(entry => entry.status = 'sent');
+          dirty = true;
+          sent += 1;
+        } catch { /* 瀏覽器拒絕建立通知時保持排程，下次開啟再試。 */ }
+      });
+      if (dirty) saveReminders(reminders);
+      return sent;
+    }
+
+    // 確認對話框：每次都重設標題、內文與按鈕文字，避免不同操作之間互相殘留。
+    function askConfirm({ title, text, confirmLabel, onConfirm }) {
+      $('dialogTitle').textContent = title;
+      $('dialogText').textContent = text;
+      $('dialogConfirm').textContent = confirmLabel;
+      confirmAction = onConfirm;
+      $('confirmDialog').showModal();
+    }
+    function closeConfirm() { $('confirmDialog').close(); confirmAction = null; }
+
+    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail };
     function setView(view) {
       document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-      document.getElementById(view + 'View').classList.add('active');
+      $(view + 'View').classList.add('active');
       document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.nav === view));
-      if (view === 'home') renderHome();
-      if (view === 'inventory') renderInventory();
+      renderers[view]?.();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function renderHome() {
       const items = loadItems();
-      const today = new Intl.DateTimeFormat('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date());
-      document.getElementById('todayLabel').textContent = today;
-      document.getElementById('heroText').textContent = items.length ? `共有 ${items.length} 項食材` : '還沒有食材';
-      document.getElementById('countCold').textContent = `${items.filter(i => i.storageLocation === '冷藏').length} 項`;
-      document.getElementById('countFrozen').textContent = `${items.filter(i => i.storageLocation === '冷凍').length} 項`;
-      document.getElementById('countRoom').textContent = `${items.filter(i => i.storageLocation === '常溫').length} 項`;
+      $('todayLabel').textContent = new Intl.DateTimeFormat('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date());
+      $('countCold').textContent = `${items.filter(i => i.storageLocation === '冷藏').length} 項`;
+      $('countFrozen').textContent = `${items.filter(i => i.storageLocation === '冷凍').length} 項`;
+      $('countRoom').textContent = `${items.filter(i => i.storageLocation === '常溫').length} 項`;
       const expiring = sortItems(items.filter(item => daysUntil(item.expiryDate) <= 3));
-      const container = document.getElementById('expiryNotice');
+      // PRD 7.1：首頁不呈現食材總數等統計資訊，改以到期狀態描述冰箱現況。
+      const hasExpired = items.some(item => daysUntil(item.expiryDate) < 0);
+      $('heroText').textContent = !items.length ? '還沒有食材' : hasExpired ? '有食材已過期，建議先處理' : expiring.length ? '有食材即將到期' : '食材保存狀況良好';
+      const container = $('expiryNotice');
       if (!expiring.length) { container.className = 'notice empty'; container.innerHTML = '<div class="notice-item"><div class="notice-icon">✨</div><div class="notice-main"><b>目前沒有即將到期食材</b><span>新增食材後，這裡會協助提醒你。</span></div></div>'; return; }
       container.className = 'notice';
-      container.innerHTML = expiring.slice(0, 3).map(item => { const info = expiryInfo(item); return `<button class="notice-item" data-detail="${item.id}" type="button" style="width:100%;border-left:0;border-right:0;border-top:0;background:transparent;text-align:left"><div class="notice-icon">${emojis[item.category] || '🥗'}</div><div class="notice-main"><b>${escapeHtml(item.name)}</b><span>${info.label}</span></div><span class="chevron">›</span></button>`; }).join('');
+      container.innerHTML = expiring.slice(0, 3).map(item => { const info = expiryInfo(item); return `<button class="notice-item" data-detail="${item.id}" type="button"><div class="notice-icon">${emojiFor(item.category)}</div><div class="notice-main"><b>${escapeHtml(item.name)}</b><span>${info.label}</span></div><span class="chevron">›</span></button>`; }).join('');
     }
 
     function renderInventory() {
-      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const query = $('searchInput').value.trim().toLowerCase();
       let items = loadItems();
       if (activeFilter !== '全部') items = items.filter(item => item.storageLocation === activeFilter);
       if (query) items = items.filter(item => item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query));
-      const list = document.getElementById('inventoryList');
+      const list = $('inventoryList');
       if (!items.length) { list.innerHTML = `<div class="empty-state"><span class="empty-icon">${query ? '🔎' : '📦'}</span><b>${query ? '找不到相符食材' : '這裡還沒有食材'}</b><p>${query ? '換個關鍵字試試看。' : '從下方「新增」建立第一筆食材。'}</p></div>`; return; }
-      list.innerHTML = sortItems(items).map(item => { const info = expiryInfo(item); return `<article class="food-card"><button data-detail="${item.id}" type="button" class="food-icon" aria-label="查看 ${escapeHtml(item.name)} 詳細資料">${emojis[item.category] || '🥗'}</button><button data-detail="${item.id}" type="button" class="food-info"><b>${escapeHtml(item.name)}</b><span>${escapeHtml(item.category)} · ${escapeHtml(item.storageLocation)} · ${item.quantity} ${escapeHtml(item.unit)}</span></button><button data-detail="${item.id}" type="button" class="expiry ${info.cls}">${info.label}</button></article>`; }).join('');
+      list.innerHTML = sortItems(items).map(item => { const info = expiryInfo(item); return `<article class="food-card"><button data-detail="${item.id}" type="button" class="food-icon" aria-label="查看 ${escapeHtml(item.name)} 詳細資料">${emojiFor(item.category)}</button><button data-detail="${item.id}" type="button" class="food-info"><b>${escapeHtml(item.name)}</b><span>${escapeHtml(item.category)} · ${escapeHtml(item.storageLocation)} · ${item.quantity} ${escapeHtml(item.unit)}</span></button><button data-detail="${item.id}" type="button" class="expiry ${info.cls}">${info.label}</button></article>`; }).join('');
     }
 
     function renderDetail() {
       const item = loadItems().find(i => i.id === selectedId);
       if (!item) { setView('inventory'); return; }
       const info = expiryInfo(item);
-      document.getElementById('detailViewTitle').textContent = item.name;
-      document.getElementById('detailContent').innerHTML = `<article class="detail-panel"><div class="detail-title"><div class="food-icon">${emojis[item.category] || '🥗'}</div><div><h2>${escapeHtml(item.name)}</h2><div class="expiry ${info.cls}" style="text-align:left;margin-top:5px">${info.label}</div></div></div><div class="meta-grid"><div class="meta"><small>食材類型</small><b>${escapeHtml(item.category)}</b></div><div class="meta"><small>存放位置</small><b>${escapeHtml(item.storageLocation)}</b></div><div class="meta"><small>目前數量</small><b>${item.quantity} ${escapeHtml(item.unit)}</b></div><div class="meta"><small>保存期限</small><b>${formatDate(item.expiryDate)}</b></div></div><div class="form-actions"><button class="button secondary wide" data-edit="${item.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete="${item.id}" type="button">刪除</button></div></article>`;
+      $('detailViewTitle').textContent = item.name;
+      $('detailContent').innerHTML = `<article class="detail-panel"><div class="detail-title"><div class="food-icon">${emojiFor(item.category)}</div><div><h2>${escapeHtml(item.name)}</h2><div class="expiry ${info.cls}" style="text-align:left;margin-top:5px">${info.label}</div></div></div><div class="meta-grid"><div class="meta"><small>食材類型</small><b>${escapeHtml(item.category)}</b></div><div class="meta"><small>存放位置</small><b>${escapeHtml(item.storageLocation)}</b></div><div class="meta"><small>目前數量</small><b>${item.quantity} ${escapeHtml(item.unit)}</b></div><div class="meta"><small>保存期限</small><b>${formatDate(item.expiryDate)}</b></div><div class="meta"><small>建立來源</small><b>${sourceLabels[item.source] || '手動新增'}</b></div></div><div class="form-actions"><button class="button secondary wide" data-edit="${item.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete="${item.id}" type="button">刪除</button></div></article>`;
     }
 
-    function prepareForm(item = null) {
-      document.getElementById('foodForm').reset();
-      document.getElementById('editingId').value = item?.id || '';
-      document.getElementById('formEyebrow').textContent = item ? '修改庫存資料' : '手動建立';
-      document.getElementById('addTitle').textContent = item ? '編輯食材' : '新增食材';
-      document.getElementById('saveButton').textContent = item ? '儲存變更' : '加入庫存';
-      if (item) ['name', 'category', 'storageLocation', 'quantity', 'unit', 'expiryDate'].forEach(key => document.getElementById(key).value = item[key]);
-      document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+    function initializeUnitOptions() {
+      const options = '<option value="">請選擇</option>' + units.map(name => `<option>${name}</option>`).join('');
+      $('unit').innerHTML = options;
+      $('shoppingUnit').innerHTML = options;
     }
-    function openAdd(item = null) { prepareForm(item); setView('add'); }
-    function openDetail(id) { selectedId = id; renderDetail(); setView('detail'); }
+    // 類型清單可在設定頁調整，重建選單時保留使用者當下的選擇。
+    function refreshCategoryOptions() {
+      const previous = $('category').value;
+      $('category').innerHTML = '<option value="">請選擇</option>' + categoryNames().map(name => `<option>${escapeHtml(name)}</option>`).join('');
+      $('category').value = previous;
+    }
+
+    function prepareForm(item = null, sourceShoppingId = '') {
+      $('foodForm').reset();
+      $('editingId').value = item?.id || '';
+      $('sourceShoppingId').value = sourceShoppingId;
+      $('formEyebrow').textContent = sourceShoppingId ? '採買清單轉入' : item ? '修改庫存資料' : '手動建立';
+      $('addTitle').textContent = item ? '編輯食材' : '新增食材';
+      $('formHint').textContent = sourceShoppingId ? '請補齊食材類型、存放位置與保存期限後再加入庫存。' : '填好基本資料後，就會儲存在這台裝置上。';
+      $('saveButton').textContent = item?.id ? '儲存變更' : '加入庫存';
+      if (item) ['name', 'category', 'storageLocation', 'quantity', 'unit', 'expiryDate'].forEach(key => { if (item[key] !== undefined) $(key).value = item[key]; });
+      $('foodForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
+    }
+    function openAdd(item = null, sourceShoppingId = '') { prepareForm(item, sourceShoppingId); setView('add'); }
+    function openDetail(id) { selectedId = id; setView('detail'); }
     function validateForm(data) {
       let valid = true;
       const labels = { name: '請輸入食材名稱', category: '請選擇食材類型', storageLocation: '請選擇存放位置', quantity: '請輸入大於 0 的數量', unit: '請選擇單位', expiryDate: '請選擇保存期限' };
-      Object.entries(labels).forEach(([key, message]) => { const error = !data[key] || (key === 'quantity' && Number(data[key]) <= 0); document.getElementById(key + 'Error').textContent = error ? message : ''; if (error) valid = false; });
+      Object.entries(labels).forEach(([key, message]) => { const error = !data[key] || (key === 'quantity' && Number(data[key]) <= 0); $(key + 'Error').textContent = error ? message : ''; if (error) valid = false; });
       return valid;
     }
 
-    function initializeOptions() {
-      const category = document.getElementById('category'); const unit = document.getElementById('unit');
-      category.innerHTML = '<option value="">請選擇</option>' + categories.map(x => `<option>${x}</option>`).join('');
-      unit.innerHTML = '<option value="">請選擇</option>' + units.map(x => `<option>${x}</option>`).join('');
+    function shoppingRank(status) { return status === 'pending' ? 0 : status === 'purchased' ? 1 : 2; }
+    function renderShopping() {
+      const items = [...loadShoppingItems()].sort((a, b) => shoppingRank(a.status) - shoppingRank(b.status) || new Date(b.updatedAt) - new Date(a.updatedAt));
+      const list = $('shoppingList');
+      if (!items.length) { list.innerHTML = '<div class="empty-state"><span class="empty-icon">🛒</span><b>採買清單是空的</b><p>新增需要購買的食材，買完後可轉成庫存草稿。</p></div>'; return; }
+      list.innerHTML = items.map(item => {
+        const isConverted = item.status === 'converted';
+        const isDone = item.status !== 'pending';
+        const detail = isConverted
+          ? '<span>已加入庫存</span>'
+          : `<span>${item.quantity} ${escapeHtml(item.unit)}${item.status === 'purchased' ? ' · 已購買' : ''}</span>${item.note ? `<span>${escapeHtml(item.note)}</span>` : ''}`;
+        const convert = item.status === 'purchased' ? `<button class="small-button convert" data-convert-shopping="${item.id}" type="button">轉為庫存</button>` : '';
+        const edit = isConverted ? '' : `<button class="small-button" data-edit-shopping="${item.id}" type="button">編輯</button>`;
+        return `<article class="shopping-card${isDone ? ' is-complete' : ''}"><input class="shopping-check" data-toggle-shopping="${item.id}" type="checkbox"${isDone ? ' checked' : ''}${isConverted ? ' disabled' : ''} aria-label="標示 ${escapeHtml(item.name)} 已購買" /><div class="shopping-main"><b>${escapeHtml(item.name)}</b>${detail}</div><div class="shopping-actions">${convert}${edit}<button class="small-button" data-delete-shopping="${item.id}" type="button">刪除</button></div></article>`;
+      }).join('');
     }
-    function seedDemo() {
-      // Keep first launch clean. Demo data intentionally not created.
+    function prepareShoppingForm(item = null) {
+      $('shoppingForm').reset();
+      $('editingShoppingId').value = item?.id || '';
+      $('saveShoppingButton').textContent = item ? '儲存變更' : '加入清單';
+      if (item) { $('shoppingName').value = item.name; $('shoppingQuantity').value = item.quantity; $('shoppingUnit').value = item.unit; $('shoppingNote').value = item.note || ''; }
+      $('shoppingForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
+    }
+    function validateShoppingForm(data) {
+      let valid = true;
+      const labels = { shoppingName: '請輸入採買項目', shoppingQuantity: '請輸入大於 0 的數量', shoppingUnit: '請選擇單位' };
+      Object.entries(labels).forEach(([key, message]) => { const error = !data[key] || (key === 'shoppingQuantity' && Number(data[key]) <= 0); $(key + 'Error').textContent = error ? message : ''; if (error) valid = false; });
+      return valid;
+    }
+
+    const permissionHints = {
+      granted: '已允許。開啟頁面時會送出到期前 3 天與到期當天的提醒。',
+      denied: '已被瀏覽器封鎖，需要到網站設定中重新允許才能收到系統通知。',
+      default: '尚未允許。允許後才能收到系統通知。',
+      unsupported: '這個瀏覽器不支援系統通知。'
+    };
+    function renderSettings() {
+      $('remindersEnabled').checked = settings.remindersEnabled;
+      const permission = notificationPermission();
+      $('reminderHint').textContent = settings.remindersEnabled ? '排程會隨食材新增、修改與刪除自動更新。' : '關閉後仍會在首頁與清單顯示到期狀態。';
+      $('permissionHint').textContent = permissionHints[permission];
+      $('requestPermissionButton').hidden = permission !== 'default';
+      $('gistId').value = syncState.gistId;
+      $('gistToken').value = syncState.token;
+      updateSyncStatusText();
+      $('inventoryDataCount').textContent = `目前共有 ${loadItems().length} 項食材。`;
+      $('shoppingDataCount').textContent = `目前共有 ${loadShoppingItems().length} 項採買項目。`;
+      $('categoryList').innerHTML = settings.categories.map(entry => {
+        const name = escapeHtml(entry.name);
+        if (entry.name === renamingCategory) return `<span class="category-chip editing"><input id="renameInput" type="text" value="${name}" aria-label="重新命名 ${name}" /><button data-save-rename type="button">儲存</button><button data-cancel-rename type="button">取消</button></span>`;
+        const remove = entry.custom ? `<button data-remove-category="${name}" type="button" aria-label="刪除 ${name}">×</button>` : '';
+        return `<span class="category-chip">${entry.emoji} ${name}<button data-rename-category="${name}" type="button" aria-label="重新命名 ${name}">✏️</button>${remove}</span>`;
+      }).join('');
+      $('renameInput')?.focus();
+    }
+    function renameCategory(oldName, newName) {
+      const trimmed = newName.trim();
+      if (!trimmed) return '請輸入類型名稱';
+      if (trimmed !== oldName && categoryNames().includes(trimmed)) return '這個類型已存在';
+      if (trimmed !== oldName) {
+        settings.categories = settings.categories.map(entry => entry.name === oldName ? { ...entry, name: trimmed } : entry);
+        saveSettings();
+        // 一併搬移既有食材，避免留下指向舊名稱的孤兒資料。
+        const items = loadItems();
+        if (items.some(item => item.category === oldName)) saveItems(items.map(item => item.category === oldName ? { ...item, category: trimmed, updatedAt: new Date().toISOString() } : item));
+        refreshCategoryOptions();
+      }
+      return '';
     }
 
     document.addEventListener('click', event => {
       const detail = event.target.closest('[data-detail]'); if (detail) return openDetail(detail.dataset.detail);
       const edit = event.target.closest('[data-edit]'); if (edit) return openAdd(loadItems().find(i => i.id === edit.dataset.edit));
-      const del = event.target.closest('[data-delete]'); if (del) return askDelete(del.dataset.delete);
+      const del = event.target.closest('[data-delete]'); if (del) return askDeleteItem(del.dataset.delete);
       const loc = event.target.closest('[data-location]'); if (loc) { activeFilter = loc.dataset.location; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.filter === activeFilter)); return setView('inventory'); }
       if (event.target.closest('[data-open-add]')) return openAdd();
       if (event.target.closest('[data-open-inventory]')) return setView('inventory');
       if (event.target.closest('[data-go-home]')) return setView('home');
-      const nav = event.target.closest('[data-nav]'); if (nav) { if (nav.dataset.nav === 'add') openAdd(); else setView(nav.dataset.nav); }
+      const navTo = event.target.closest('[data-nav-to]'); if (navTo) return setView(navTo.dataset.navTo);
+      const nav = event.target.closest('[data-nav]'); if (nav) { if (nav.dataset.nav === 'add') openAdd(); else setView(nav.dataset.nav); return; }
+
+      const editShopping = event.target.closest('[data-edit-shopping]');
+      if (editShopping) { const item = loadShoppingItems().find(entry => entry.id === editShopping.dataset.editShopping); if (item) { prepareShoppingForm(item); window.scrollTo({ top: 0, behavior: 'smooth' }); } return; }
+      const toggle = event.target.closest('[data-toggle-shopping]');
+      if (toggle) {
+        const items = loadShoppingItems();
+        const index = items.findIndex(item => item.id === toggle.dataset.toggleShopping);
+        if (index >= 0 && items[index].status !== 'converted') { items[index] = { ...items[index], status: toggle.checked ? 'purchased' : 'pending', updatedAt: new Date().toISOString() }; saveShoppingItems(items); renderShopping(); }
+        return;
+      }
+      const convert = event.target.closest('[data-convert-shopping]');
+      if (convert) {
+        const item = loadShoppingItems().find(entry => entry.id === convert.dataset.convertShopping);
+        if (item?.status === 'purchased') { openAdd({ name: item.name, quantity: item.quantity, unit: item.unit }, item.id); showToast('請補齊類型、位置與保存期限'); }
+        return;
+      }
+      const deleteShopping = event.target.closest('[data-delete-shopping]'); if (deleteShopping) return askDeleteShopping(deleteShopping.dataset.deleteShopping);
+
+      const rename = event.target.closest('[data-rename-category]'); if (rename) { renamingCategory = rename.dataset.renameCategory; $('categoryManageError').textContent = ''; return renderSettings(); }
+      if (event.target.closest('[data-cancel-rename]')) { renamingCategory = null; $('categoryManageError').textContent = ''; return renderSettings(); }
+      if (event.target.closest('[data-save-rename]')) {
+        const error = renameCategory(renamingCategory, $('renameInput').value);
+        $('categoryManageError').textContent = error;
+        if (!error) { renamingCategory = null; renderSettings(); showToast('已更新食材類型'); }
+        return;
+      }
+      const removeCategory = event.target.closest('[data-remove-category]');
+      if (removeCategory) {
+        const name = removeCategory.dataset.removeCategory;
+        const used = loadItems().filter(item => item.category === name).length;
+        if (used) { $('categoryManageError').textContent = `還有 ${used} 項食材使用「${name}」，請先改用其他類型或重新命名。`; return; }
+        settings.categories = settings.categories.filter(entry => entry.name !== name);
+        saveSettings(); refreshCategoryOptions(); $('categoryManageError').textContent = ''; renderSettings(); showToast('已刪除自訂類型');
+      }
     });
+
     document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => { activeFilter = button.dataset.filter; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b === button)); renderInventory(); }));
-    document.getElementById('searchInput').addEventListener('input', renderInventory);
-    document.getElementById('cancelForm').addEventListener('click', () => setView('inventory'));
-    document.getElementById('foodForm').addEventListener('submit', event => {
+    $('searchInput').addEventListener('input', renderInventory);
+    $('cancelForm').addEventListener('click', () => setView('inventory'));
+
+    $('foodForm').addEventListener('submit', event => {
       event.preventDefault();
       const raw = Object.fromEntries(new FormData(event.currentTarget));
       if (!validateForm(raw)) return;
-      const items = loadItems(); const id = raw.editingId || crypto.randomUUID();
-      const item = { id, name: raw.name.trim(), category: raw.category, storageLocation: raw.storageLocation, quantity: Number(raw.quantity), unit: raw.unit, expiryDate: raw.expiryDate, createdAt: raw.editingId ? items.find(i => i.id === id)?.createdAt || new Date().toISOString() : new Date().toISOString(), updatedAt: new Date().toISOString(), source: 'manual' };
-      const index = items.findIndex(i => i.id === id); if (index >= 0) items[index] = item; else items.push(item); saveItems(items); showToast(index >= 0 ? '食材資料已更新' : '已加入冰箱'); selectedId = id; setView('inventory');
+      const items = loadItems();
+      const id = raw.editingId || crypto.randomUUID();
+      const existing = items.find(i => i.id === id);
+      const item = {
+        id, name: raw.name.trim(), category: raw.category, storageLocation: raw.storageLocation,
+        quantity: Number(raw.quantity), unit: raw.unit, expiryDate: raw.expiryDate,
+        createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(),
+        source: existing?.source || (raw.sourceShoppingId ? 'shopping_draft' : 'manual')
+      };
+      const index = items.findIndex(i => i.id === id);
+      if (index >= 0) items[index] = item; else items.push(item);
+      saveItems(items);
+      syncReminders();
+      if (raw.sourceShoppingId) {
+        const shoppingItems = loadShoppingItems();
+        const shoppingIndex = shoppingItems.findIndex(entry => entry.id === raw.sourceShoppingId);
+        if (shoppingIndex >= 0) { shoppingItems[shoppingIndex] = { ...shoppingItems[shoppingIndex], status: 'converted', inventoryDraftId: id, updatedAt: new Date().toISOString() }; saveShoppingItems(shoppingItems); }
+      }
+      showToast(index >= 0 ? '食材資料已更新' : raw.sourceShoppingId ? '已從採買清單加入冰箱' : '已加入冰箱');
+      selectedId = id;
+      setView('inventory');
     });
-    function askDelete(id) { confirmAction = () => { saveItems(loadItems().filter(i => i.id !== id)); document.getElementById('confirmDialog').close(); showToast('已刪除食材'); setView('inventory'); }; document.getElementById('dialogTitle').textContent = '確定刪除這項食材？'; document.getElementById('dialogText').textContent = '刪除後無法復原，資料會從這台裝置移除。'; document.getElementById('confirmDialog').showModal(); }
-    document.getElementById('dialogCancel').addEventListener('click', () => document.getElementById('confirmDialog').close());
-    document.getElementById('dialogConfirm').addEventListener('click', () => confirmAction?.());
-    document.getElementById('settingsButton').addEventListener('click', () => showToast('設定頁將在下一階段加入'));
-    initializeOptions(); seedDemo(); renderHome();
+
+    $('shoppingForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const raw = Object.fromEntries(new FormData(event.currentTarget));
+      if (!validateShoppingForm(raw)) return;
+      const items = loadShoppingItems();
+      const id = raw.editingShoppingId || crypto.randomUUID();
+      const existing = items.find(entry => entry.id === id);
+      const item = {
+        id, name: raw.shoppingName.trim(), quantity: Number(raw.shoppingQuantity), unit: raw.shoppingUnit,
+        note: raw.shoppingNote.trim(), status: existing?.status || 'pending', inventoryDraftId: existing?.inventoryDraftId || null,
+        createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString()
+      };
+      const index = items.findIndex(entry => entry.id === id);
+      if (index >= 0) items[index] = item; else items.push(item);
+      saveShoppingItems(items);
+      showToast(index >= 0 ? '採買項目已更新' : '已加入採買清單');
+      prepareShoppingForm();
+      renderShopping();
+    });
+    $('cancelShoppingForm').addEventListener('click', () => prepareShoppingForm());
+
+    function askDeleteItem(id) {
+      askConfirm({
+        title: '確定刪除這項食材？', text: '刪除後無法復原，資料會從這台裝置移除。', confirmLabel: '確定刪除',
+        onConfirm: () => { saveItems(loadItems().filter(i => i.id !== id)); syncReminders(); showToast('已刪除食材'); setView('inventory'); }
+      });
+    }
+    function askDeleteShopping(id) {
+      askConfirm({
+        title: '確定刪除這個採買項目？', text: '刪除後無法復原，資料會從這台裝置移除。', confirmLabel: '確定刪除',
+        onConfirm: () => { saveShoppingItems(loadShoppingItems().filter(item => item.id !== id)); showToast('已刪除採買項目'); renderShopping(); }
+      });
+    }
+    function askClearData(storageKey, label) {
+      askConfirm({
+        title: `確定清除${label}？`, text: `這台裝置上的${label}會全部移除，且無法復原。請再次確認。`, confirmLabel: '確定清除',
+        onConfirm: () => {
+          if (storageKey === STORAGE_KEY) saveItems([]); else saveShoppingItems([]);
+          syncReminders(); showToast(`已清除${label}`); renderSettings(); renderHome(); renderShopping();
+        }
+      });
+    }
+    $('clearInventoryButton').addEventListener('click', () => askClearData(STORAGE_KEY, '庫存資料'));
+    $('clearShoppingButton').addEventListener('click', () => askClearData(SHOPPING_KEY, '採買清單'));
+
+    $('dialogCancel').addEventListener('click', closeConfirm);
+    $('dialogConfirm').addEventListener('click', () => { const action = confirmAction; closeConfirm(); action?.(); });
+    $('settingsButton').addEventListener('click', () => { renamingCategory = null; $('categoryManageError').textContent = ''; setView('settings'); });
+    async function requestNotificationPermission() {
+      if (notificationPermission() !== 'default') return notificationPermission();
+      try { return await Notification.requestPermission(); } catch { return notificationPermission(); }
+    }
+    $('remindersEnabled').addEventListener('change', async event => {
+      settings = { ...settings, remindersEnabled: event.target.checked };
+      saveSettings();
+      if (event.target.checked) { await requestNotificationPermission(); deliverDueReminders(); }
+      renderSettings();
+      showToast(event.target.checked ? '已啟用到期提醒' : '已關閉到期提醒');
+    });
+    $('requestPermissionButton').addEventListener('click', async () => {
+      const permission = await requestNotificationPermission();
+      if (permission === 'granted') deliverDueReminders();
+      renderSettings();
+      showToast(permission === 'granted' ? '已允許系統通知' : '未取得通知權限');
+    });
+    $('addCategoryButton').addEventListener('click', () => {
+      const input = $('newCategory');
+      const name = input.value.trim();
+      if (!name) { $('categoryManageError').textContent = '請輸入類型名稱'; input.focus(); return; }
+      if (categoryNames().includes(name)) { $('categoryManageError').textContent = '這個類型已存在'; input.focus(); return; }
+      settings.categories = [...settings.categories, { name, emoji: '🥗', custom: true }];
+      saveSettings(); refreshCategoryOptions();
+      input.value = ''; $('categoryManageError').textContent = '';
+      renderSettings(); showToast('已新增自訂類型');
+    });
+
+    $('saveSyncButton').addEventListener('click', () => {
+      syncState = { ...syncState, gistId: $('gistId').value.trim(), token: $('gistToken').value.trim(), lastError: null };
+      saveSyncState(); renderSettings();
+      showToast(syncConfigured() ? '已儲存同步設定' : '已清除同步設定');
+      if (syncConfigured()) syncNow();
+    });
+    $('syncNowButton').addEventListener('click', () => syncNow());
+    $('clearSyncButton').addEventListener('click', () => {
+      askConfirm({
+        title: '清除同步設定？', text: '這台裝置上的 Gist ID 與存取權杖會被移除，雲端與本機的食材資料都不會被刪除。', confirmLabel: '確定清除',
+        onConfirm: () => { syncState = { gistId: '', token: '', localUpdatedAt: syncState.localUpdatedAt, lastSyncedAt: null, remoteUpdatedAt: null, lastError: null }; saveSyncState(); renderSettings(); showToast('已清除同步設定'); }
+      });
+    });
+    $('conflictCancel').addEventListener('click', () => { pendingRemote = null; $('conflictDialog').close(); });
+    $('conflictUseRemote').addEventListener('click', () => {
+      const remote = pendingRemote; pendingRemote = null; $('conflictDialog').close();
+      if (remote) { adoptRemote(remote); showToast('已改用雲端資料'); }
+    });
+    $('conflictUseLocal').addEventListener('click', async () => {
+      pendingRemote = null; $('conflictDialog').close();
+      try { await pushPayload(); syncState.lastError = null; showToast('已用本機資料覆蓋雲端'); }
+      catch (error) { syncState.lastError = error.message; showToast(`同步失敗：${error.message}`); }
+      saveSyncState(); updateSyncStatusText();
+    });
+
+    initializeUnitOptions();
+    refreshCategoryOptions();
+    syncReminders();
+    deliverDueReminders();
+    updateSyncStatusText();
+    if (syncConfigured()) syncNow({ silent: true });
+    renderHome();
   </script>
 </body>
 </html>
