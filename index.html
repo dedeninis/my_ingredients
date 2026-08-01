@@ -123,6 +123,10 @@
     .meta small, .meta b { display: block; }
     .meta small { color: var(--muted); font-size: .76rem; }
     .meta b { margin-top: 4px; }
+    .scan-stage { position: relative; overflow: hidden; margin-bottom: 14px; border-radius: 18px; background: #101a14; aspect-ratio: 4 / 3; }
+    .scan-stage video { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .scan-frame { position: absolute; inset: 24% 12%; border: 3px solid rgba(255,255,255,.9); border-radius: 12px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.3); }
+    .scan-hint { margin: 0 0 16px; color: var(--muted); font-size: .88rem; line-height: 1.6; }
     .suggestion-entry { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-align: left; box-shadow: 0 2px 8px rgba(38,61,48,.025); }
     .suggestion-entry:hover { border-color: var(--leaf); }
     .suggestion-entry b { display: block; }
@@ -178,7 +182,7 @@
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
       <section class="section"><div class="section-head"><h2>🍳 今日料理建議</h2></div><button class="suggestion-entry" data-nav-to="suggestion" type="button"><span><b id="suggestionHeadline">看看現有食材可以做什麼</b><small id="suggestionSubline">依冰箱裡的食材給建議</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
-      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-nav-to="scan" type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button></div></section>
     </section>
 
     <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
@@ -194,6 +198,7 @@
         <p id="formHint">填好基本資料後，就會儲存在這台裝置上。</p>
         <input id="editingId" name="editingId" type="hidden" />
         <input id="sourceShoppingId" name="sourceShoppingId" type="hidden" />
+        <input id="sourceBarcode" name="sourceBarcode" type="hidden" />
         <div class="form-grid">
           <div class="field full"><label for="name">食材名稱</label><input id="name" name="name" placeholder="例如：雞胸肉" required /><span class="field-error" id="nameError"></span></div>
           <div class="field"><label for="category">食材類型</label><select id="category" name="category" required></select><span class="field-error" id="categoryError"></span></div>
@@ -209,6 +214,17 @@
     <section id="detailView" class="view" aria-labelledby="detailViewTitle">
       <header class="topbar"><div><p class="eyebrow">食材詳細資料</p><h1 id="detailViewTitle">查看食材</h1></div><button class="icon-button" data-open-inventory type="button" aria-label="回到庫存">←</button></header>
       <div id="detailContent"></div>
+    </section>
+
+    <section id="scanView" class="view" aria-labelledby="scanTitle">
+      <header class="topbar"><div><p class="eyebrow">新增食材</p><h1 id="scanTitle">掃描條碼</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
+      <div class="scan-stage" id="scanStage" hidden><video id="scanVideo" playsinline muted></video><div class="scan-frame" aria-hidden="true"></div></div>
+      <p class="scan-hint" id="scanHint"></p>
+      <form id="barcodeForm" class="form-card" novalidate>
+        <p>掃不到的話，也可以直接輸入條碼下方那一排數字。</p>
+        <div class="field full"><label for="manualBarcode">條碼號碼</label><input id="manualBarcode" name="manualBarcode" type="text" inputmode="numeric" autocomplete="off" placeholder="例如：4710616820089" /><span class="field-error" id="manualBarcodeError"></span></div>
+        <div class="form-actions"><button class="button wide" type="submit">查詢這組條碼</button></div>
+      </form>
     </section>
 
     <section id="suggestionView" class="view" aria-labelledby="suggestionTitle">
@@ -251,6 +267,7 @@
         <h2>資料管理</h2>
         <div class="setting-row"><div><b>庫存資料</b><p id="inventoryDataCount"></p></div><button class="button danger" id="clearInventoryButton" type="button">清除庫存</button></div>
         <div class="setting-row"><div><b>採買清單</b><p id="shoppingDataCount"></p></div><button class="button danger" id="clearShoppingButton" type="button">清除清單</button></div>
+        <div class="setting-row"><div><b>條碼記錄</b><p id="productDataCount"></p></div><button class="button danger" id="clearProductsButton" type="button">清除條碼</button></div>
         <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。</p>
       </section>
       <section class="settings-group">
@@ -281,6 +298,7 @@
     const SHOPPING_KEY = 'ingredient-manager-v1-shopping-items';
     const SETTINGS_KEY = 'ingredient-manager-v1-settings';
     const REMINDER_KEY = 'ingredient-manager-v1-reminders';
+    const PRODUCT_KEY = 'ingredient-manager-v1-products';
     // 同步設定含存取權杖，只留在這台裝置，永遠不會被寫進同步內容。
     const SYNC_KEY = 'ingredient-manager-v1-sync';
     const GIST_FILENAME = 'my-ingredients.json';
@@ -312,6 +330,8 @@
     function saveShoppingItems(items) { localStorage.setItem(SHOPPING_KEY, JSON.stringify(items)); markDataChanged(); }
     function loadReminders() { return readList(REMINDER_KEY); }
     function saveReminders(reminders) { localStorage.setItem(REMINDER_KEY, JSON.stringify(reminders)); }
+    function loadProducts() { return readList(PRODUCT_KEY); }
+    function saveProductsQuiet(products) { localStorage.setItem(PRODUCT_KEY, JSON.stringify(products)); }
     function loadSettings() {
       let stored = null;
       try { stored = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch { stored = null; }
@@ -335,6 +355,54 @@
     function sortItems(items) { return [...items].sort((a, b) => expiryInfo(a).rank - expiryInfo(b).rank || new Date(b.createdAt) - new Date(a.createdAt)); }
     function showToast(message) { const el = $('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => el.classList.remove('show'), 2400); }
     function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char])); }
+
+    // ---- 條碼（PRD 7.6）----
+    // GS1 的廠商識別碼是變動長度，光看條碼無法判斷廠商碼在哪結束，
+    // 因此條碼池一律以「完整條碼」為鍵，不做任何拆解或前綴聚合。
+    function normalizeBarcode(value) {
+      const digits = String(value || '').replace(/\D/g, '');
+      // UPC-A（12 碼）補前導 0 後與 EAN-13 是同一個 GTIN，不正規化會在池子裡存成兩筆。
+      if (digits.length === 12) return '0' + digits;
+      return digits;
+    }
+    // 020-029 與 200-299 為 GS1 的店內碼（restricted distribution），
+    // 賣場現場秤重貼標用的就是這段，號碼內含價格或重量，不對應任何全球商品資料。
+    function isInStoreBarcode(barcode) {
+      return barcode.length === 13 && (barcode[0] === '2' || barcode.startsWith('02'));
+    }
+    function isSupportedBarcode(barcode) {
+      return barcode.length === 8 || barcode.length === 13;
+    }
+
+    function findProduct(barcode) { return loadProducts().find(entry => entry.barcode === barcode) || null; }
+    function upsertProduct(barcode, item) {
+      if (!barcode || isInStoreBarcode(barcode)) return;
+      const products = loadProducts();
+      const index = products.findIndex(entry => entry.barcode === barcode);
+      const now = new Date().toISOString();
+      const record = {
+        barcode, name: item.name, category: item.category, unit: item.unit,
+        storageLocation: item.storageLocation,
+        createdAt: products[index]?.createdAt || now, updatedAt: now
+      };
+      if (index >= 0) products[index] = record; else products.push(record);
+      saveProductsQuiet(products);
+      markDataChanged();
+    }
+    // 條碼池是累積型字典，同步時一律合併而非覆蓋，
+    // 否則兩台裝置各自學到的商品會在衝突時被迫二選一。
+    function mergeProducts(remoteProducts) {
+      if (!Array.isArray(remoteProducts)) return 0;
+      const merged = new Map(loadProducts().map(entry => [entry.barcode, entry]));
+      let added = 0;
+      remoteProducts.forEach(entry => {
+        if (!entry || typeof entry.barcode !== 'string' || !entry.name) return;
+        const existing = merged.get(entry.barcode);
+        if (!existing || (entry.updatedAt || '') > (existing.updatedAt || '')) { merged.set(entry.barcode, entry); added += 1; }
+      });
+      if (added) saveProductsQuiet([...merged.values()]);
+      return added;
+    }
 
     // ---- 料理建議（PRD 10.2）----
     // 只產生料理名稱、可用食材與優先原因，不提供步驟、調味比例或營養資訊。
@@ -476,7 +544,7 @@
     }
 
     function buildPayload() {
-      return { version: 1, updatedAt: syncState.localUpdatedAt || new Date().toISOString(), items: loadItems(), shoppingItems: loadShoppingItems(), settings };
+      return { version: 1, updatedAt: syncState.localUpdatedAt || new Date().toISOString(), items: loadItems(), shoppingItems: loadShoppingItems(), settings, products: loadProducts() };
     }
     function applyPayload(payload) {
       applyingRemote = true;
@@ -537,20 +605,27 @@
     async function syncNow({ silent = false } = {}) {
       if (!syncConfigured()) { if (!silent) showToast('請先填入 Gist ID 與存取權杖'); return; }
       if (syncing) return;
+      // 衝突還沒解決前不要再同步，否則背景推送會繞過使用者的選擇。
+      if (pendingRemote) { if (!silent) showToast('請先處理待解決的資料衝突'); return; }
       syncing = true; clearTimeout(pushTimer); updateSyncStatusText();
       try {
         const remote = await fetchRemotePayload();
+        // 先記下本機是否有變更，再合併條碼池，避免合併本身影響下面的判斷。
+        const localDirty = hasLocalChanges();
+        const poolGrew = remote ? mergeProducts(remote.products) > 0 : false;
         const remoteChanged = !!remote && remote.updatedAt !== syncState.remoteUpdatedAt;
         if (!remote) { await pushPayload(); if (!silent) showToast('已上傳到雲端'); }
-        else if (remoteChanged && hasLocalChanges()) {
-          // 兩邊都改過：不靜默覆蓋，交給使用者決定。
+        else if (remoteChanged && localDirty) {
+          // 庫存與採買兩邊都改過：不靜默覆蓋，交給使用者決定。條碼池不受影響，前面已合併。
           pendingRemote = remote;
-          $('conflictText').textContent = `這台裝置最後修改於 ${formatDateTime(syncState.localUpdatedAt)}，雲端最後修改於 ${formatDateTime(remote.updatedAt)}。請選擇要保留哪一份，另一份會被覆蓋。`;
+          $('conflictText').textContent = `這台裝置最後修改於 ${formatDateTime(syncState.localUpdatedAt)}，雲端最後修改於 ${formatDateTime(remote.updatedAt)}。請選擇要保留哪一份，另一份會被覆蓋。條碼池不受影響，兩邊的都會保留。`;
           $('conflictDialog').showModal();
         }
         else if (remoteChanged) { adoptRemote(remote); if (!silent) showToast('已從雲端更新'); }
-        else if (hasLocalChanges()) { await pushPayload(); if (!silent) showToast('已上傳到雲端'); }
+        else if (localDirty) { await pushPayload(); if (!silent) showToast('已上傳到雲端'); }
         else if (!silent) showToast('資料已是最新');
+        // 合併後本機多了條碼，安排一次上傳讓雲端也拿到完整的池子。
+        if (poolGrew) markDataChanged();
         syncState.lastError = null;
       } catch (error) {
         syncState.lastError = error.message;
@@ -639,8 +714,9 @@
     }
     function closeConfirm() { $('confirmDialog').close(); confirmAction = null; }
 
-    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions };
+    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions, scan: startScan };
     function setView(view) {
+      if (view !== 'scan') stopScan();   // 離開掃描頁一定要關掉相機
       document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
       $(view + 'View').classList.add('active');
       document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.nav === view));
@@ -699,18 +775,89 @@
       $('category').value = previous;
     }
 
-    function prepareForm(item = null, sourceShoppingId = '') {
+    function prepareForm(item = null, sourceShoppingId = '', options = {}) {
       $('foodForm').reset();
       $('editingId').value = item?.id || '';
       $('sourceShoppingId').value = sourceShoppingId;
-      $('formEyebrow').textContent = sourceShoppingId ? '採買清單轉入' : item ? '修改庫存資料' : '手動建立';
-      $('addTitle').textContent = item ? '編輯食材' : '新增食材';
-      $('formHint').textContent = sourceShoppingId ? '請補齊食材類型、存放位置與保存期限後再加入庫存。' : '填好基本資料後，就會儲存在這台裝置上。';
+      $('sourceBarcode').value = options.barcode || '';
+      $('formEyebrow').textContent = sourceShoppingId ? '採買清單轉入' : options.barcode ? '條碼掃描' : item ? '修改庫存資料' : '手動建立';
+      $('addTitle').textContent = item?.id ? '編輯食材' : '新增食材';
+      $('formHint').textContent = options.notice
+        || (sourceShoppingId ? '請補齊食材類型、存放位置與保存期限後再加入庫存。' : '填好基本資料後，就會儲存在這台裝置上。');
       $('saveButton').textContent = item?.id ? '儲存變更' : '加入庫存';
-      if (item) ['name', 'category', 'storageLocation', 'quantity', 'unit', 'expiryDate'].forEach(key => { if (item[key] !== undefined) $(key).value = item[key]; });
+      if (item) ['name', 'category', 'storageLocation', 'quantity', 'unit', 'expiryDate'].forEach(key => { if (item[key] !== undefined && item[key] !== null) $(key).value = item[key]; });
       $('foodForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
     }
-    function openAdd(item = null, sourceShoppingId = '') { prepareForm(item, sourceShoppingId); setView('add'); }
+    function openAdd(item = null, sourceShoppingId = '', options = {}) { prepareForm(item, sourceShoppingId, options); setView('add'); }
+
+    // 掃描：優先用瀏覽器內建的 BarcodeDetector（Android Chrome 有，iOS Safari 沒有），
+    // 不可用時退回手動輸入條碼號碼，不引入額外的解碼函式庫。
+    let scanStream = null;
+    let scanTimer = null;
+    let scanDetector = null;
+    function stopScan() {
+      clearInterval(scanTimer); scanTimer = null;
+      if (scanStream) { scanStream.getTracks().forEach(track => track.stop()); scanStream = null; }
+      const video = $('scanVideo');
+      if (video) video.srcObject = null;
+      $('scanStage').hidden = true;
+    }
+    async function startScan() {
+      $('manualBarcode').value = '';
+      $('manualBarcodeError').textContent = '';
+      const hint = $('scanHint');
+      if (!('BarcodeDetector' in window)) {
+        hint.textContent = '這個瀏覽器不支援相機掃描（iOS Safari 目前沒有這項功能）。請直接輸入條碼號碼。';
+        return;
+      }
+      try {
+        const supported = await BarcodeDetector.getSupportedFormats();
+        const formats = ['ean_13', 'ean_8', 'upc_a', 'upc_e'].filter(format => supported.includes(format));
+        if (!formats.length) throw new Error('unsupported');
+        scanDetector = new BarcodeDetector({ formats });
+        scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+        const video = $('scanVideo');
+        video.srcObject = scanStream;
+        await video.play();
+        $('scanStage').hidden = false;
+        hint.textContent = '把商品條碼對準框內，辨識到就會自動帶入。';
+        scanTimer = setInterval(detectBarcodeFrame, 350);
+      } catch (error) {
+        stopScan();
+        hint.textContent = error?.name === 'NotAllowedError'
+          ? '沒有取得相機權限，請改用下方輸入條碼號碼。'
+          : '無法開啟相機，請改用下方輸入條碼號碼。';
+      }
+    }
+    async function detectBarcodeFrame() {
+      const video = $('scanVideo');
+      if (!scanDetector || !video?.videoWidth) return;
+      try {
+        const codes = await scanDetector.detect(video);
+        if (codes.length) { const value = codes[0].rawValue; stopScan(); handleBarcode(value); }
+      } catch { /* 單張辨識失敗就等下一輪 */ }
+    }
+
+    function handleBarcode(raw) {
+      const barcode = normalizeBarcode(raw);
+      if (!isSupportedBarcode(barcode)) {
+        $('manualBarcodeError').textContent = '這不是有效的商品條碼，應為 8 或 13 位數字。';
+        return;
+      }
+      if (isInStoreBarcode(barcode)) {
+        // 店內碼內含價格且僅該賣場有效，查不到也不該記憶（PRD 7.6：說明原因並轉手動）。
+        openAdd(null, '', { notice: '這是賣場現場秤重的店內條碼，只在該店有效且內含價格，查不到商品資料。請直接填寫。' });
+        return;
+      }
+      const known = findProduct(barcode);
+      if (known) {
+        openAdd({ name: known.name, category: known.category, unit: known.unit, storageLocation: known.storageLocation }, '',
+          { barcode, notice: `已帶出「${known.name}」，請確認內容並填寫數量與保存期限。` });
+        showToast('條碼已認得這項商品');
+        return;
+      }
+      openAdd(null, '', { barcode, notice: '這組條碼還沒有紀錄。填寫後會記住，之後在任何裝置掃到都會自動帶出。' });
+    }
     function openDetail(id) { selectedId = id; setView('detail'); }
     function validateForm(data) {
       let valid = true;
@@ -766,6 +913,7 @@
       updateSyncStatusText();
       $('inventoryDataCount').textContent = `目前共有 ${loadItems().length} 項食材。`;
       $('shoppingDataCount').textContent = `目前共有 ${loadShoppingItems().length} 項採買項目。`;
+      $('productDataCount').textContent = `已記住 ${loadProducts().length} 組商品條碼，掃描時自動帶出。`;
       $('categoryList').innerHTML = settings.categories.map(entry => {
         const name = escapeHtml(entry.name);
         if (entry.name === renamingCategory) return `<span class="category-chip editing"><input id="renameInput" type="text" value="${name}" aria-label="重新命名 ${name}" /><button data-save-rename type="button">儲存</button><button data-cancel-rename type="button">取消</button></span>`;
@@ -850,12 +998,14 @@
         id, name: raw.name.trim(), category: raw.category, storageLocation: raw.storageLocation,
         quantity: Number(raw.quantity), unit: raw.unit, expiryDate: raw.expiryDate,
         createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(),
-        source: existing?.source || (raw.sourceShoppingId ? 'shopping_draft' : 'manual')
+        source: existing?.source || (raw.sourceShoppingId ? 'shopping_draft' : raw.sourceBarcode ? 'barcode' : 'manual')
       };
       const index = items.findIndex(i => i.id === id);
       if (index >= 0) items[index] = item; else items.push(item);
       saveItems(items);
       syncReminders();
+      // 記住這組條碼對應的商品，下次任何裝置掃到都能直接帶出。
+      if (raw.sourceBarcode) upsertProduct(raw.sourceBarcode, item);
       if (raw.sourceShoppingId) {
         const shoppingItems = loadShoppingItems();
         const shoppingIndex = shoppingItems.findIndex(entry => entry.id === raw.sourceShoppingId);
@@ -886,6 +1036,13 @@
       renderShopping();
     });
     $('cancelShoppingForm').addEventListener('click', () => prepareShoppingForm());
+    $('barcodeForm').addEventListener('submit', event => {
+      event.preventDefault();
+      $('manualBarcodeError').textContent = '';
+      const value = $('manualBarcode').value.trim();
+      if (!value) { $('manualBarcodeError').textContent = '請輸入條碼號碼'; return; }
+      handleBarcode(value);
+    });
 
     function askDeleteItem(id) {
       askConfirm({
@@ -903,13 +1060,16 @@
       askConfirm({
         title: `確定清除${label}？`, text: `這台裝置上的${label}會全部移除，且無法復原。請再次確認。`, confirmLabel: '確定清除',
         onConfirm: () => {
-          if (storageKey === STORAGE_KEY) saveItems([]); else saveShoppingItems([]);
+          if (storageKey === STORAGE_KEY) saveItems([]);
+          else if (storageKey === SHOPPING_KEY) saveShoppingItems([]);
+          else { saveProductsQuiet([]); markDataChanged(); }
           syncReminders(); showToast(`已清除${label}`); renderSettings(); renderHome(); renderShopping();
         }
       });
     }
     $('clearInventoryButton').addEventListener('click', () => askClearData(STORAGE_KEY, '庫存資料'));
     $('clearShoppingButton').addEventListener('click', () => askClearData(SHOPPING_KEY, '採買清單'));
+    $('clearProductsButton').addEventListener('click', () => askClearData(PRODUCT_KEY, '條碼記錄'));
 
     $('dialogCancel').addEventListener('click', closeConfirm);
     $('dialogConfirm').addEventListener('click', () => { const action = confirmAction; closeConfirm(); action?.(); });
