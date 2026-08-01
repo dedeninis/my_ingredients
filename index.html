@@ -123,6 +123,12 @@
     .meta small, .meta b { display: block; }
     .meta small { color: var(--muted); font-size: .76rem; }
     .meta b { margin-top: 4px; }
+    .mode-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+    .mode { display: grid; gap: 4px; place-items: center; padding: 11px 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--muted); font-size: .8rem; font-weight: 700; }
+    .mode span { font-size: 1.25rem; line-height: 1; }
+    .mode.active { border-color: var(--leaf); background: var(--leaf-soft); color: #1c5339; }
+    .mode:disabled { opacity: .45; cursor: not-allowed; }
+    .mode:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
     .scan-stage { position: relative; overflow: hidden; margin-bottom: 14px; border-radius: 18px; background: #101a14; aspect-ratio: 4 / 3; }
     .scan-stage video { display: block; width: 100%; height: 100%; object-fit: cover; }
     .scan-frame { position: absolute; inset: 24% 12%; border: 3px solid rgba(255,255,255,.9); border-radius: 12px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.3); }
@@ -182,7 +188,7 @@
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
       <section class="section"><div class="section-head"><h2>🍳 今日料理建議</h2></div><button class="suggestion-entry" data-nav-to="suggestion" type="button"><span><b id="suggestionHeadline">看看現有食材可以做什麼</b><small id="suggestionSubline">依冰箱裡的食材給建議</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
-      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-nav-to="scan" type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
     </section>
 
     <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
@@ -194,6 +200,21 @@
 
     <section id="addView" class="view" aria-labelledby="addTitle">
       <header class="topbar"><div><p class="eyebrow" id="formEyebrow">手動建立</p><h1 id="addTitle">新增食材</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
+      <div class="mode-row" role="group" aria-label="選擇新增方式">
+        <button class="mode active" data-mode="manual" type="button"><span aria-hidden="true">✍️</span>手動</button>
+        <button class="mode" data-mode="barcode" type="button"><span aria-hidden="true">🏷</span>條碼</button>
+        <button class="mode" data-mode="photo" type="button" disabled title="下一階段開發"><span aria-hidden="true">📷</span>拍照</button>
+        <button class="mode" data-mode="voice" type="button" disabled title="下一階段開發"><span aria-hidden="true">🎤</span>語音</button>
+      </div>
+      <div id="barcodePanel" hidden>
+        <div class="scan-stage" id="scanStage" hidden><video id="scanVideo" playsinline muted></video><div class="scan-frame" aria-hidden="true"></div></div>
+        <p class="scan-hint" id="scanHint"></p>
+        <form id="barcodeForm" class="form-card" novalidate>
+          <p>掃不到的話，也可以直接輸入條碼下方那一排數字。</p>
+          <div class="field full"><label for="manualBarcode">條碼號碼</label><input id="manualBarcode" name="manualBarcode" type="text" inputmode="numeric" autocomplete="off" placeholder="例如：4710616820089" /><span class="field-error" id="manualBarcodeError"></span></div>
+          <div class="form-actions"><button class="button wide" type="submit">查詢這組條碼</button></div>
+        </form>
+      </div>
       <form id="foodForm" class="form-card" novalidate>
         <p id="formHint">填好基本資料後，就會儲存在這台裝置上。</p>
         <input id="editingId" name="editingId" type="hidden" />
@@ -214,17 +235,6 @@
     <section id="detailView" class="view" aria-labelledby="detailViewTitle">
       <header class="topbar"><div><p class="eyebrow">食材詳細資料</p><h1 id="detailViewTitle">查看食材</h1></div><button class="icon-button" data-open-inventory type="button" aria-label="回到庫存">←</button></header>
       <div id="detailContent"></div>
-    </section>
-
-    <section id="scanView" class="view" aria-labelledby="scanTitle">
-      <header class="topbar"><div><p class="eyebrow">新增食材</p><h1 id="scanTitle">掃描條碼</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
-      <div class="scan-stage" id="scanStage" hidden><video id="scanVideo" playsinline muted></video><div class="scan-frame" aria-hidden="true"></div></div>
-      <p class="scan-hint" id="scanHint"></p>
-      <form id="barcodeForm" class="form-card" novalidate>
-        <p>掃不到的話，也可以直接輸入條碼下方那一排數字。</p>
-        <div class="field full"><label for="manualBarcode">條碼號碼</label><input id="manualBarcode" name="manualBarcode" type="text" inputmode="numeric" autocomplete="off" placeholder="例如：4710616820089" /><span class="field-error" id="manualBarcodeError"></span></div>
-        <div class="form-actions"><button class="button wide" type="submit">查詢這組條碼</button></div>
-      </form>
     </section>
 
     <section id="suggestionView" class="view" aria-labelledby="suggestionTitle">
@@ -715,9 +725,9 @@
     }
     function closeConfirm() { $('confirmDialog').close(); confirmAction = null; }
 
-    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions, scan: startScan };
+    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions };
     function setView(view) {
-      if (view !== 'scan') stopScan();   // 離開掃描頁一定要關掉相機
+      if (view !== 'add') stopScan();   // 離開新增頁一定要關掉相機
       document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
       $(view + 'View').classList.add('active');
       document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.nav === view));
@@ -789,7 +799,16 @@
       if (item) ['name', 'category', 'storageLocation', 'quantity', 'unit', 'expiryDate'].forEach(key => { if (item[key] !== undefined && item[key] !== null) $(key).value = item[key]; });
       $('foodForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
     }
-    function openAdd(item = null, sourceShoppingId = '', options = {}) { prepareForm(item, sourceShoppingId, options); setView('add'); }
+    // 新增頁是四種輸入方式的統一入口（PRD 5.1）。手動與條碼各自是一個面板，
+    // 切到其他方式時務必停掉相機。
+    function setAddMode(mode) {
+      document.querySelectorAll('.mode').forEach(button => button.classList.toggle('active', button.dataset.mode === mode));
+      $('barcodePanel').hidden = mode !== 'barcode';
+      $('foodForm').hidden = mode === 'barcode';
+      if (mode === 'barcode') startScan(); else stopScan();
+    }
+    function openAdd(item = null, sourceShoppingId = '', options = {}) { prepareForm(item, sourceShoppingId, options); setView('add'); setAddMode('manual'); }
+    function openScan() { prepareForm(); setView('add'); setAddMode('barcode'); }
 
     // 掃描：優先用瀏覽器內建的 BarcodeDetector（Android Chrome 有，iOS Safari 沒有），
     // 不可用時退回手動輸入條碼號碼，不引入額外的解碼函式庫。
@@ -949,6 +968,8 @@
       const del = event.target.closest('[data-delete]'); if (del) return askDeleteItem(del.dataset.delete);
       const loc = event.target.closest('[data-location]'); if (loc) { activeFilter = loc.dataset.location; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.filter === activeFilter)); return setView('inventory'); }
       if (event.target.closest('[data-open-add]')) return openAdd();
+      if (event.target.closest('[data-open-scan]')) return openScan();
+      const mode = event.target.closest('[data-mode]'); if (mode) return setAddMode(mode.dataset.mode);
       if (event.target.closest('[data-open-inventory]')) return setView('inventory');
       if (event.target.closest('[data-go-home]')) return setView('home');
       const navTo = event.target.closest('[data-nav-to]'); if (navTo) return setView(navTo.dataset.navTo);
