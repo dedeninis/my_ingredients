@@ -198,7 +198,6 @@
         <p id="formHint">填好基本資料後，就會儲存在這台裝置上。</p>
         <input id="editingId" name="editingId" type="hidden" />
         <input id="sourceShoppingId" name="sourceShoppingId" type="hidden" />
-        <input id="sourceBarcode" name="sourceBarcode" type="hidden" />
         <div class="form-grid">
           <div class="field full"><label for="name">食材名稱</label><input id="name" name="name" placeholder="例如：雞胸肉" required /><span class="field-error" id="nameError"></span></div>
           <div class="field"><label for="category">食材類型</label><select id="category" name="category" required></select><span class="field-error" id="categoryError"></span></div>
@@ -206,6 +205,7 @@
           <div class="field"><label for="quantity">數量</label><input id="quantity" name="quantity" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="例如：2" required /><span class="field-error" id="quantityError"></span></div>
           <div class="field"><label for="unit">單位</label><select id="unit" name="unit" required></select><span class="field-error" id="unitError"></span></div>
           <div class="field full"><label for="expiryDate">保存期限</label><input id="expiryDate" name="expiryDate" type="date" required /><span class="field-error" id="expiryDateError"></span></div>
+          <div class="field full"><label for="barcode">商品條碼（選填）</label><input id="barcode" name="barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="掃描後會自動填入，也可自行輸入" /><span class="field-error" id="barcodeError"></span></div>
         </div>
         <div class="form-actions"><button class="button secondary wide" id="cancelForm" type="button">取消</button><button class="button wide" type="submit" id="saveButton">加入庫存</button></div>
       </form>
@@ -671,6 +671,7 @@
     function reminderMessage(item) {
       const days = daysUntil(item.expiryDate);
       if (days === 0) return `食材提醒：${item.name}今天到期，請確認是否需要使用。`;
+      if (days === 1) return `食材提醒：${item.name}明天到期，建議優先使用。`;
       return `食材提醒：${item.name}將於 ${days} 天後到期，建議優先使用。`;
     }
 
@@ -760,7 +761,7 @@
       if (!item) { setView('inventory'); return; }
       const info = expiryInfo(item);
       $('detailViewTitle').textContent = item.name;
-      $('detailContent').innerHTML = `<article class="detail-panel"><div class="detail-title"><div class="food-icon">${emojiFor(item.category)}</div><div><h2>${escapeHtml(item.name)}</h2><div class="expiry ${info.cls}" style="text-align:left;margin-top:5px">${info.label}</div></div></div><div class="meta-grid"><div class="meta"><small>食材類型</small><b>${escapeHtml(item.category)}</b></div><div class="meta"><small>存放位置</small><b>${escapeHtml(item.storageLocation)}</b></div><div class="meta"><small>目前數量</small><b>${item.quantity} ${escapeHtml(item.unit)}</b></div><div class="meta"><small>保存期限</small><b>${formatDate(item.expiryDate)}</b></div><div class="meta"><small>建立來源</small><b>${sourceLabels[item.source] || '手動新增'}</b></div></div><div class="form-actions"><button class="button secondary wide" data-edit="${item.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete="${item.id}" type="button">刪除</button></div></article>`;
+      $('detailContent').innerHTML = `<article class="detail-panel"><div class="detail-title"><div class="food-icon">${emojiFor(item.category)}</div><div><h2>${escapeHtml(item.name)}</h2><div class="expiry ${info.cls}" style="text-align:left;margin-top:5px">${info.label}</div></div></div><div class="meta-grid"><div class="meta"><small>食材類型</small><b>${escapeHtml(item.category)}</b></div><div class="meta"><small>存放位置</small><b>${escapeHtml(item.storageLocation)}</b></div><div class="meta"><small>目前數量</small><b>${item.quantity} ${escapeHtml(item.unit)}</b></div><div class="meta"><small>保存期限</small><b>${formatDate(item.expiryDate)}</b></div><div class="meta"><small>建立來源</small><b>${sourceLabels[item.source] || '手動新增'}</b></div>${item.barcode ? `<div class="meta"><small>商品條碼</small><b>${escapeHtml(item.barcode)}</b></div>` : ''}</div><div class="form-actions"><button class="button secondary wide" data-edit="${item.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete="${item.id}" type="button">刪除</button></div></article>`;
     }
 
     function initializeUnitOptions() {
@@ -779,7 +780,7 @@
       $('foodForm').reset();
       $('editingId').value = item?.id || '';
       $('sourceShoppingId').value = sourceShoppingId;
-      $('sourceBarcode').value = options.barcode || '';
+      $('barcode').value = item?.barcode || options.barcode || '';
       $('formEyebrow').textContent = sourceShoppingId ? '採買清單轉入' : options.barcode ? '條碼掃描' : item ? '修改庫存資料' : '手動建立';
       $('addTitle').textContent = item?.id ? '編輯食材' : '新增食材';
       $('formHint').textContent = options.notice
@@ -863,6 +864,11 @@
       let valid = true;
       const labels = { name: '請輸入食材名稱', category: '請選擇食材類型', storageLocation: '請選擇存放位置', quantity: '請輸入大於 0 的數量', unit: '請選擇單位', expiryDate: '請選擇保存期限' };
       Object.entries(labels).forEach(([key, message]) => { const error = !data[key] || (key === 'quantity' && Number(data[key]) <= 0); $(key + 'Error').textContent = error ? message : ''; if (error) valid = false; });
+      // 條碼為選填，但填了就必須是有效長度。
+      const barcode = data.barcode ? normalizeBarcode(data.barcode) : '';
+      const barcodeError = !!barcode && !isSupportedBarcode(barcode);
+      $('barcodeError').textContent = barcodeError ? '條碼需為 8 或 13 位數字' : '';
+      if (barcodeError) valid = false;
       return valid;
     }
 
@@ -994,18 +1000,20 @@
       const items = loadItems();
       const id = raw.editingId || crypto.randomUUID();
       const existing = items.find(i => i.id === id);
+      const barcode = raw.barcode ? normalizeBarcode(raw.barcode) : '';
       const item = {
         id, name: raw.name.trim(), category: raw.category, storageLocation: raw.storageLocation,
         quantity: Number(raw.quantity), unit: raw.unit, expiryDate: raw.expiryDate,
+        ...(barcode ? { barcode } : {}),
         createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(),
-        source: existing?.source || (raw.sourceShoppingId ? 'shopping_draft' : raw.sourceBarcode ? 'barcode' : 'manual')
+        source: existing?.source || (raw.sourceShoppingId ? 'shopping_draft' : barcode ? 'barcode' : 'manual')
       };
       const index = items.findIndex(i => i.id === id);
       if (index >= 0) items[index] = item; else items.push(item);
       saveItems(items);
       syncReminders();
-      // 記住這組條碼對應的商品，下次任何裝置掃到都能直接帶出。
-      if (raw.sourceBarcode) upsertProduct(raw.sourceBarcode, item);
+      // 條碼留在食材紀錄上，之後編輯改名時才能同步修正條碼記錄。
+      if (barcode) upsertProduct(barcode, item);
       if (raw.sourceShoppingId) {
         const shoppingItems = loadShoppingItems();
         const shoppingIndex = shoppingItems.findIndex(entry => entry.id === raw.sourceShoppingId);

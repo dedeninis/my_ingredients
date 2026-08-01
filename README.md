@@ -76,6 +76,8 @@
 
 保存期限一律留空，條碼不可能知道這個。
 
+條碼會存在食材紀錄上，新增與編輯表單都有「商品條碼（選填）」欄位，詳細頁也看得到。因此**編輯食材改名時，條碼記錄會同步更正** —— 掃錯或打錯名稱不會永久卡在記錄裡。條碼欄位也可自行輸入或清空，清空只解除該筆食材的關聯，不影響已記住的條碼。
+
 #### 條碼記錄會跨裝置共用
 
 記住的條碼會隨雲端同步共用給所有裝置，而且**採合併而非覆蓋** —— 手機學到的和電腦學到的都會保留，即使庫存那邊發生衝突也不受影響。條碼在全台通用且終身不變，所以這份記錄不會過期，命中率只會隨使用時間上升。
@@ -185,7 +187,7 @@ GS1 的廠商識別碼是變動長度（6 到 10 碼不等，依廠商申請的�
 
 **食材（InventoryItem）**
 
-`id`、`name`、`category`、`quantity`、`unit`、`storageLocation`（冷藏／冷凍／常溫）、`expiryDate`、`source`（`manual` / `photo_ai` / `barcode` / `voice` / `shopping_draft`）、`createdAt`、`updatedAt`
+`id`、`name`、`category`、`quantity`、`unit`、`storageLocation`（冷藏／冷凍／常溫）、`expiryDate`、`barcode`（選填）、`source`（`manual` / `photo_ai` / `barcode` / `voice` / `shopping_draft`）、`createdAt`、`updatedAt`
 
 **採買項目（ShoppingItem）**
 
