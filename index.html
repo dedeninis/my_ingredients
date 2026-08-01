@@ -116,6 +116,16 @@
     .meta small, .meta b { display: block; }
     .meta small { color: var(--muted); font-size: .76rem; }
     .meta b { margin-top: 4px; }
+    .suggestion-entry { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-align: left; box-shadow: 0 2px 8px rgba(38,61,48,.025); }
+    .suggestion-entry:hover { border-color: var(--leaf); }
+    .suggestion-entry b { display: block; }
+    .suggestion-entry small { display: block; margin-top: 4px; color: var(--muted); font-size: .84rem; }
+    .suggestion-list { display: grid; gap: 10px; }
+    .suggestion-card { padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 8px rgba(38,61,48,.025); }
+    .suggestion-card h3 { margin: 0 0 7px; font-size: 1.04rem; letter-spacing: -.02em; }
+    .suggestion-card .used { color: var(--muted); font-size: .86rem; line-height: 1.6; }
+    .suggestion-card .reason { display: flex; gap: 7px; margin-top: 10px; padding: 9px 11px; border-radius: 11px; background: var(--sun-soft); color: #765516; font-size: .84rem; line-height: 1.5; }
+    .suggestion-note { margin: 0 0 14px; color: var(--muted); font-size: .86rem; line-height: 1.6; }
     .shopping-list { display: grid; gap: 10px; margin-top: 18px; }
     .shopping-card { display: flex; gap: 12px; align-items: flex-start; padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
     .shopping-card.is-complete { opacity: .68; }
@@ -159,6 +169,7 @@
       </header>
       <section class="hero" aria-label="冰箱摘要"><div class="hero-row"><div><p>目前冰箱狀態</p><strong id="heroText">還沒有食材</strong></div><div class="fridge" aria-hidden="true">🧊</div></div></section>
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
+      <section class="section"><div class="section-head"><h2>🍳 今日料理建議</h2></div><button class="suggestion-entry" data-nav-to="suggestion" type="button"><span><b id="suggestionHeadline">看看現有食材可以做什麼</b><small id="suggestionSubline">依冰箱裡的食材給建議</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
       <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button></div></section>
     </section>
@@ -191,6 +202,12 @@
     <section id="detailView" class="view" aria-labelledby="detailViewTitle">
       <header class="topbar"><div><p class="eyebrow">食材詳細資料</p><h1 id="detailViewTitle">查看食材</h1></div><button class="icon-button" data-open-inventory type="button" aria-label="回到庫存">←</button></header>
       <div id="detailContent"></div>
+    </section>
+
+    <section id="suggestionView" class="view" aria-labelledby="suggestionTitle">
+      <header class="topbar"><div><p class="eyebrow">依現有庫存</p><h1 id="suggestionTitle">今日料理建議</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
+      <p class="suggestion-note">依冰箱現有食材比對常見家常菜，優先列出能用掉即將到期食材的組合。已過期的食材不會被列入建議。</p>
+      <div id="suggestionList" class="suggestion-list"></div>
     </section>
 
     <section id="shoppingView" class="view" aria-labelledby="shoppingTitle">
@@ -311,6 +328,116 @@
     function sortItems(items) { return [...items].sort((a, b) => expiryInfo(a).rank - expiryInfo(b).rank || new Date(b.createdAt) - new Date(a.createdAt)); }
     function showToast(message) { const el = $('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => el.classList.remove('show'), 2400); }
     function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char])); }
+
+    // ---- 料理建議（PRD 10.2）----
+    // 只產生料理名稱、可用食材與優先原因，不提供步驟、調味比例或營養資訊。
+    // 目前為本機規則比對；之後要換成 AI 時，替換 getSuggestions 的實作即可，呼叫端不需改動。
+    // needs 的每一組代表一項必要材料，組內任一關鍵字命中即可。
+    const KEYWORD_RECIPES = [
+      { name: '番茄炒蛋', needs: [['番茄', '蕃茄'], ['蛋']] },
+      { name: '蔥花蛋', needs: [['蔥'], ['蛋']] },
+      { name: '洋蔥炒蛋', needs: [['洋蔥'], ['蛋']] },
+      { name: '菜脯蛋', needs: [['菜脯', '蘿蔔乾'], ['蛋']] },
+      { name: '蛋炒飯', needs: [['飯', '米'], ['蛋']] },
+      { name: '滑蛋豆腐', needs: [['豆腐'], ['蛋']] },
+      { name: '麻婆豆腐', needs: [['豆腐'], ['絞肉', '豬肉', '牛肉']] },
+      { name: '味噌豆腐湯', needs: [['味噌'], ['豆腐']] },
+      { name: '三杯雞', needs: [['雞'], ['薑', '蔥', '九層塔']] },
+      { name: '宮保雞丁', needs: [['雞'], ['辣椒', '花生']] },
+      { name: '蔥爆牛肉', needs: [['牛肉'], ['蔥']] },
+      { name: '青椒炒肉絲', needs: [['青椒'], ['豬肉', '肉絲']] },
+      { name: '高麗菜炒肉', needs: [['高麗菜'], ['豬肉', '肉片', '培根']] },
+      { name: '馬鈴薯燉肉', needs: [['馬鈴薯'], ['豬肉', '牛肉']] },
+      { name: '蘿蔔排骨湯', needs: [['蘿蔔'], ['排骨']] },
+      { name: '苦瓜排骨湯', needs: [['苦瓜'], ['排骨']] },
+      { name: '蒜泥白肉', needs: [['豬肉', '五花'], ['蒜']] },
+      { name: '薑絲蛤蜊湯', needs: [['蛤蜊'], ['薑']] },
+      { name: '蛤蜊絲瓜', needs: [['蛤蜊'], ['絲瓜']] },
+      { name: '清蒸魚', needs: [['魚'], ['薑', '蔥']] },
+      { name: '蒜香蝦', needs: [['蝦'], ['蒜']] },
+      { name: '海鮮粥', needs: [['蝦', '魚', '蛤蜊', '花枝'], ['米', '飯']] },
+      { name: '皮蛋瘦肉粥', needs: [['皮蛋'], ['豬肉', '絞肉'], ['米', '飯']] },
+      { name: '咖哩飯', needs: [['咖哩'], ['雞', '豬肉', '牛肉'], ['飯', '米']] },
+      { name: '白菜滷', needs: [['白菜']] },
+      { name: '涼拌小黃瓜', needs: [['小黃瓜']] },
+      { name: '蒜炒青菜', needs: [['青江菜', '菠菜', '空心菜', '地瓜葉', '莧菜'], ['蒜']] },
+      { name: '玉米濃湯', needs: [['玉米'], ['牛奶', '鮮奶']] },
+      { name: '鮮奶燉蛋', needs: [['牛奶', '鮮奶'], ['蛋']] },
+      { name: '香蕉牛奶', needs: [['香蕉'], ['牛奶', '鮮奶']] },
+      { name: '起司蛋吐司', needs: [['吐司'], ['起司'], ['蛋']] },
+      { name: '鮪魚三明治', needs: [['鮪魚'], ['吐司']] }
+    ];
+    // 關鍵字沒命中時的保底，改以食材類型組合比對。
+    const CATEGORY_RECIPES = [
+      { name: '蔬菜烘蛋', needs: ['蔬菜', '蛋類'] },
+      { name: '家常炒肉片', needs: ['肉類', '蔬菜'] },
+      { name: '海鮮蔬菜湯', needs: ['海鮮', '蔬菜'] },
+      { name: '什錦炒飯', needs: ['主食', '蛋類'] },
+      { name: '清冰箱雜炊', needs: ['主食', '蔬菜', '肉類'] },
+      { name: '蔬菜濃湯', needs: ['蔬菜', '乳製品'] },
+      { name: '水果優格杯', needs: ['水果', '乳製品'] },
+      { name: '清炒時蔬', needs: ['蔬菜'] },
+      { name: '煎蛋', needs: ['蛋類'] },
+      { name: '水果拼盤', needs: ['水果'] }
+    ];
+
+    function collectMatches(usable, needs, matcher) {
+      const used = [];
+      const satisfied = needs.every(requirement => {
+        const found = usable.find(item => !used.includes(item) && matcher(item, requirement));
+        if (found) used.push(found);
+        return !!found;
+      });
+      return satisfied ? used : null;
+    }
+
+    function buildLocalSuggestions(items) {
+      // 已過期的食材不建議拿來料理；先依到期日排序，讓同一個條件有多樣可選時優先用掉最快到期的。
+      const usable = items.filter(item => daysUntil(item.expiryDate) >= 0)
+        .sort((a, b) => daysUntil(a.expiryDate) - daysUntil(b.expiryDate));
+      const matched = [];
+      KEYWORD_RECIPES.forEach(recipe => {
+        const used = collectMatches(usable, recipe.needs, (item, words) => words.some(word => item.name.includes(word)));
+        if (used) matched.push({ name: recipe.name, used, tier: 2 });
+      });
+      CATEGORY_RECIPES.forEach(recipe => {
+        const used = collectMatches(usable, recipe.needs, (item, category) => item.category === category);
+        if (used) matched.push({ name: recipe.name, used, tier: 1 });
+      });
+      const seen = new Set();
+      return matched
+        .filter(entry => !seen.has(entry.name) && seen.add(entry.name))
+        .map(entry => {
+          const urgent = entry.used.filter(item => daysUntil(item.expiryDate) <= 3);
+          const soonest = [...entry.used].sort((a, b) => daysUntil(a.expiryDate) - daysUntil(b.expiryDate))[0];
+          const days = soonest ? daysUntil(soonest.expiryDate) : null;
+          const when = days === 0 ? '今天到期' : days === 1 ? '明天到期' : `還有 ${days} 天到期`;
+          return {
+            name: entry.name,
+            used: entry.used,
+            reason: urgent.length ? `${soonest.name}${when}，建議優先使用` : null,
+            score: urgent.length * 10 + entry.used.length + entry.tier
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 6);
+    }
+
+    // 保持非同步介面，日後改接 AI 服務時呼叫端不必調整。
+    async function getSuggestions() { return buildLocalSuggestions(loadItems()); }
+
+    function renderSuggestions() {
+      const list = $('suggestionList');
+      list.innerHTML = '<div class="empty-state"><span class="empty-icon">🍳</span><b>整理建議中…</b></div>';
+      getSuggestions().then(suggestions => {
+        if (!suggestions.length) {
+          const hasUsable = loadItems().some(item => daysUntil(item.expiryDate) >= 0);
+          list.innerHTML = `<div class="empty-state"><span class="empty-icon">${hasUsable ? '🤔' : '📦'}</span><b>${hasUsable ? '目前的食材組合還沒有對應建議' : '冰箱裡還沒有可用食材'}</b><p>${hasUsable ? '再新增幾樣常見食材，這裡就會出現搭配。' : '先新增食材，這裡就會依庫存給建議。'}</p></div>`;
+          return;
+        }
+        list.innerHTML = suggestions.map(entry => `<article class="suggestion-card"><h3>${escapeHtml(entry.name)}</h3><div class="used">可使用：${entry.used.map(item => `${emojiFor(item.category)} ${escapeHtml(item.name)}`).join('、')}</div>${entry.reason ? `<div class="reason"><span aria-hidden="true">⚠️</span><span>${escapeHtml(entry.reason)}</span></div>` : ''}</article>`).join('');
+      });
+    }
 
     // ---- 雲端同步（Secret Gist）----
     // gistId 與 token 只存在這台裝置，不會被放進同步內容，也不該出現在原始碼裡。
@@ -505,7 +632,7 @@
     }
     function closeConfirm() { $('confirmDialog').close(); confirmAction = null; }
 
-    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail };
+    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions };
     function setView(view) {
       document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
       $(view + 'View').classList.add('active');
@@ -524,6 +651,11 @@
       // PRD 7.1：首頁不呈現食材總數等統計資訊，改以到期狀態描述冰箱現況。
       const hasExpired = items.some(item => daysUntil(item.expiryDate) < 0);
       $('heroText').textContent = !items.length ? '還沒有食材' : hasExpired ? '有食材已過期，建議先處理' : expiring.length ? '有食材即將到期' : '食材保存狀況良好';
+      getSuggestions().then(suggestions => {
+        const top = suggestions[0];
+        $('suggestionHeadline').textContent = top ? `今天可以做「${top.name}」` : '看看現有食材可以做什麼';
+        $('suggestionSubline').textContent = top ? (top.reason || `可使用：${top.used.map(item => item.name).join('、')}`) : '依冰箱裡的食材給建議';
+      });
       const container = $('expiryNotice');
       if (!expiring.length) { container.className = 'notice empty'; container.innerHTML = '<div class="notice-item"><div class="notice-icon">✨</div><div class="notice-main"><b>目前沒有即將到期食材</b><span>新增食材後，這裡會協助提醒你。</span></div></div>'; return; }
       container.className = 'notice';
