@@ -231,7 +231,7 @@
           <div class="field full"><label for="name">食材名稱</label><input id="name" name="name" placeholder="例如：雞胸肉" required /><span class="field-error" id="nameError"></span></div>
           <div class="field"><label for="category">食材類型</label><select id="category" name="category" required></select><span class="field-error" id="categoryError"></span></div>
           <div class="field"><label for="storageLocation">存放位置</label><select id="storageLocation" name="storageLocation" required><option value="">請選擇</option><option>冷藏</option><option>冷凍</option><option>常溫</option></select><span class="field-error" id="storageLocationError"></span></div>
-          <div class="field"><label for="quantity">數量</label><input id="quantity" name="quantity" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="例如：2" required /><span class="field-error" id="quantityError"></span></div>
+          <div class="field"><label for="quantity">數量</label><input id="quantity" name="quantity" type="number" inputmode="decimal" min="0.01" step="any" placeholder="例如：2" required /><span class="field-error" id="quantityError"></span></div>
           <div class="field"><label for="unit">單位</label><select id="unit" name="unit" required></select><span class="field-error" id="unitError"></span></div>
           <div class="field full"><label for="expiryDate">保存期限</label><input id="expiryDate" name="expiryDate" type="date" required /><span class="field-error" id="expiryDateError"></span></div>
           <div class="field full"><label for="barcode">商品條碼（選填）</label><input id="barcode" name="barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="掃描後會自動填入，也可自行輸入" /><span class="field-error" id="barcodeError"></span></div>
@@ -340,6 +340,9 @@
       { name: '罐頭／乾貨', emoji: '🥫' }, { name: '其他', emoji: '🥗' }
     ];
     const units = ['包', '盒', '瓶', '顆', '把', '份', '公斤', '公克', '毫升', '罐'];
+    // 數量輸入框的級距依單位而定：公斤常見 0.5、1.2 這種值；公克與毫升是整數為主。
+    // 其餘計數單位用 any —— 上下鍵每次跳 1，但半顆高麗菜、半盒豆腐這類小數仍可直接輸入。
+    const UNIT_STEPS = { '公斤': '0.1', '公克': '1', '毫升': '1' };
     const sourceLabels = { manual: '手動新增', photo_ai: '拍照辨識', barcode: '條碼掃描', voice: '語音輸入', shopping_draft: '採買清單轉入', receipt: '發票辨識' };
     let activeFilter = '全部';
     let selectedId = null;
@@ -905,6 +908,7 @@
       $('saveButton').textContent = item?.id ? '儲存變更' : '加入庫存';
       if (item) ['name', 'category', 'storageLocation', 'quantity', 'unit', 'expiryDate'].forEach(key => { if (item[key] !== undefined && item[key] !== null) $(key).value = item[key]; });
       $('foodForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
+      applyQuantityStep();
     }
     // 新增頁是四種輸入方式的統一入口（PRD 5.1）。手動與條碼各自是一個面板，
     // 切到其他方式時務必停掉相機。
@@ -916,6 +920,7 @@
       if (mode === 'barcode') startScan(); else stopScan();
       if (mode === 'receipt') { $('receiptError').textContent = aiConfigured() ? '' : '尚未設定 Gemini API 金鑰，請先到設定頁填入。'; renderReceiptList(); }
     }
+    function applyQuantityStep() { $('quantity').step = UNIT_STEPS[$('unit').value] || 'any'; }
     function openAdd(item = null, sourceShoppingId = '', options = {}) { prepareForm(item, sourceShoppingId, options); setView('add'); setAddMode('manual'); }
     function openScan() { prepareForm(); setView('add'); setAddMode('barcode'); }
     function openReceipt() { prepareForm(); setView('add'); setAddMode('receipt'); }
@@ -1138,6 +1143,7 @@
     });
 
     document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => { activeFilter = button.dataset.filter; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b === button)); renderInventory(); }));
+    $('unit').addEventListener('change', applyQuantityStep);
     $('searchInput').addEventListener('input', renderInventory);
     $('cancelForm').addEventListener('click', () => setView('inventory'));
 
