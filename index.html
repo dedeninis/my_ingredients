@@ -209,12 +209,16 @@
     .suggestion-card h3 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.04rem; letter-spacing: -.02em; }
     .suggestion-search { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
     .suggestion-search .label { color: var(--muted); font-size: .78rem; white-space: nowrap; }
-    /* 依「儘量放大」的要求盡量加大，同時保持三個一排不換行、不擠壓菜名。 */
-    .suggestion-search a { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--meta-bg); font-size: 1.55rem; line-height: 1; text-decoration: none; }
+    /* 原本用 emoji 當圖示（▶️🍳🍚），使用者反映不直覺、看不出對應哪個網站，
+       改用平台名稱文字本身——最短、最不會誤解，且引用平台名稱屬合理使用，不像 Logo 有商標疑慮。 */
+    .suggestion-search a { display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 19px; background: var(--meta-bg); color: var(--ink); font-size: .82rem; font-weight: 600; line-height: 1; text-decoration: none; white-space: nowrap; }
     .suggestion-search a:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
     /* 分享是次要動作，不該跟「儲存日誌」搶同一種滿版主色的視覺份量，
-       改用跟料理搜尋捷徑同一套小圖示樣式，內斂但仍看得到。 */
-    .log-share-icon { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--meta-bg); color: var(--ink); font-size: 1.25rem; line-height: 1; }
+       改用跟料理搜尋捷徑同一套小圖示樣式，內斂但仍看得到。
+       圖示原本用 📤 emoji，不對應任何作業系統的分享符號慣例，改成手畫的通用「方塊+往上箭頭」，
+       是各家圖示庫（Feather、Lucide 等）共用的通用分享符號畫法，非任何品牌商標。 */
+    .log-share-icon { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--meta-bg); color: var(--ink); line-height: 1; }
+    .log-share-icon svg { width: 20px; height: 20px; }
     .log-share-icon:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
     .suggestion-card .used { color: var(--muted); font-size: .86rem; line-height: 1.6; }
     .suggestion-card .reason { display: flex; gap: 7px; margin-top: 10px; padding: 9px 11px; border-radius: 11px; background: var(--sun-soft); color: var(--warn-ink); font-size: .84rem; line-height: 1.5; }
@@ -896,7 +900,7 @@
         <article class="detail-panel">
           <div id="logDetailPhotoSlot"></div>
           <div class="suggestion-title" style="margin-bottom:5px"><h2 style="margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(entry.dishName)}</h2>${recipeSearchLinks(entry.dishName)}</div>
-          <div class="suggestion-title" style="margin-bottom:14px"><span class="expiry normal" style="text-align:left">${formatDate(entry.date)}</span><button class="log-share-icon" id="logShareButton" data-share-log="${entry.id}" type="button" hidden aria-label="分享這篇日誌" title="分享">📤</button></div>
+          <div class="suggestion-title" style="margin-bottom:14px"><span class="expiry normal" style="text-align:left">${formatDate(entry.date)}</span><button class="log-share-icon" id="logShareButton" data-share-log="${entry.id}" type="button" hidden aria-label="分享這篇日誌" title="分享"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button></div>
           <div class="section-head" style="margin-top:18px"><h2>用了哪些食材</h2></div>
           <div class="category-list">${itemsHtml}</div>
           <div class="form-actions" style="margin-top:20px"><button class="button secondary wide" data-edit-log="${entry.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
@@ -1265,12 +1269,12 @@
     function recipeSearchLinks(dishName) {
       const encoded = encodeURIComponent(dishName);
       const targets = [
-        { key: 'youtube', label: 'YouTube', emoji: '▶️', url: `https://www.youtube.com/results?search_query=${encoded}+食譜` },
-        { key: 'cookpad', label: 'Cookpad', emoji: '🍳', url: `https://cookpad.com/tw/搜尋/${encoded}` },
-        { key: 'icook', label: '愛料理', emoji: '🍚', url: `https://icook.tw/search/${encoded}` }
+        { key: 'youtube', label: 'YouTube', url: `https://www.youtube.com/results?search_query=${encoded}+食譜` },
+        { key: 'cookpad', label: 'Cookpad', url: `https://cookpad.com/tw/搜尋/${encoded}` },
+        { key: 'icook', label: '愛料理', url: `https://icook.tw/search/${encoded}` }
       ];
       return `<div class="suggestion-search"><span class="label" aria-hidden="true">參考食譜</span>${targets.map(t =>
-        `<a href="${t.url}" target="_blank" rel="noopener" aria-label="到 ${t.label} 搜尋「${escapeHtml(dishName)}」的做法" title="${t.label}">${t.emoji}</a>`
+        `<a href="${t.url}" target="_blank" rel="noopener" aria-label="到 ${t.label} 搜尋「${escapeHtml(dishName)}」的做法" title="${t.label}">${t.label}</a>`
       ).join('')}</div>`;
     }
 
