@@ -187,7 +187,7 @@
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
       <section class="section"><div class="section-head"><h2>🍳 今日料理建議</h2></div><button class="suggestion-entry" data-nav-to="suggestion" type="button"><span><b id="suggestionHeadline">看看現有食材可以做什麼</b><small id="suggestionSubline">依冰箱裡的食材給建議</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
-      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-open-receipt type="button"><span class="action-icon">🧾</span><span class="action-label">發票辨識</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
     </section>
 
     <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
@@ -918,6 +918,7 @@
     }
     function openAdd(item = null, sourceShoppingId = '', options = {}) { prepareForm(item, sourceShoppingId, options); setView('add'); setAddMode('manual'); }
     function openScan() { prepareForm(); setView('add'); setAddMode('barcode'); }
+    function openReceipt() { prepareForm(); setView('add'); setAddMode('receipt'); }
 
     // 掃描：優先用瀏覽器內建的 BarcodeDetector（Android Chrome 有，iOS Safari 沒有），
     // 不可用時退回手動輸入條碼號碼，不引入額外的解碼函式庫。
@@ -1081,6 +1082,7 @@
       const loc = event.target.closest('[data-location]'); if (loc) { activeFilter = loc.dataset.location; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.filter === activeFilter)); return setView('inventory'); }
       if (event.target.closest('[data-open-add]')) return openAdd();
       if (event.target.closest('[data-open-scan]')) return openScan();
+      if (event.target.closest('[data-open-receipt]')) return openReceipt();
       const mode = event.target.closest('[data-mode]'); if (mode) return setAddMode(mode.dataset.mode);
       const receiptAdd = event.target.closest('[data-receipt-add]');
       if (receiptAdd) {
