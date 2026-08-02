@@ -244,6 +244,7 @@
       <header class="topbar"><div><p class="eyebrow">本機庫存</p><h1 id="inventoryTitle">所有食材</h1></div><button class="icon-button" data-open-add type="button" aria-label="新增食材">＋</button></header>
       <div class="search"><span aria-hidden="true">🔍</span><input id="searchInput" type="search" placeholder="搜尋食材名稱" autocomplete="off" /></div>
       <div class="filter-row" role="group" aria-label="依位置篩選"><button class="filter active" type="button" data-filter="全部">全部</button><button class="filter" type="button" data-filter="冷藏">🧊 冷藏</button><button class="filter" type="button" data-filter="冷凍">❄️ 冷凍</button><button class="filter" type="button" data-filter="常溫">🏠 常溫</button></div>
+      <div id="categoryFilterRow" class="filter-row" role="group" aria-label="依食材類型篩選"></div>
       <div id="inventoryList" class="inventory-list"></div>
     </section>
 
@@ -417,6 +418,7 @@
     const UNIT_STEPS = { '公斤': '0.1', '公克': '1', '毫升': '1' };
     const sourceLabels = { manual: '手動新增', photo_ai: '拍照辨識', barcode: '條碼掃描', voice: '語音輸入', shopping_draft: '採買清單轉入', receipt: '發票辨識' };
     let activeFilter = '全部';
+    let activeCategoryFilter = '全部';
     let selectedId = null;
     let confirmAction = null;
     let renamingCategory = null;
@@ -656,16 +658,27 @@
     }
     // 條碼池與食材記憶都是累積型字典，同步時一律合併而非覆蓋，
     // 否則兩台裝置各自學到的東西會在衝突時被迫二選一。
-    function mergeDictionary(local, incoming, keyField) {
+    // reconcile 讓呼叫端決定同名時新舊兩筆怎麼合成一筆，而不是單純新蓋舊——
+    // 保存天數是多次觀察值的累積，蓋掉會讓另一台裝置學到的樣本憑空消失。
+    function mergeDictionary(local, incoming, keyField, reconcile = (existing, entry) => entry) {
       if (!Array.isArray(incoming)) return null;
       const merged = new Map(local.map(entry => [entry[keyField], entry]));
-      let added = 0;
+      let changed = 0;
       incoming.forEach(entry => {
         if (!entry || typeof entry[keyField] !== 'string' || !entry[keyField]) return;
         const existing = merged.get(entry[keyField]);
-        if (!existing || (entry.updatedAt || '') > (existing.updatedAt || '')) { merged.set(entry[keyField], entry); added += 1; }
+        if (!existing) { merged.set(entry[keyField], entry); changed += 1; return; }
+        if ((entry.updatedAt || '') <= (existing.updatedAt || '')) return;
+        merged.set(entry[keyField], reconcile(existing, entry));
+        changed += 1;
       });
-      return added ? [...merged.values()] : null;
+      return changed ? [...merged.values()] : null;
+    }
+    // 兩邊各自觀察到的保存天數都是真實資料，取聯集去重、只留最近 5 筆，
+    // 而不是讓比較新的那筆整個蓋掉另一邊已經學到的樣本。
+    function mergeShelfLife(existing, entry) {
+      const merged = [...new Set([...(existing.shelfLifeSamples || []), ...(entry.shelfLifeSamples || [])])];
+      return { ...entry, shelfLifeSamples: merged.slice(-5) };
     }
     function mergeProducts(remoteProducts) {
       const merged = mergeDictionary(loadProducts(), remoteProducts, 'barcode');
@@ -673,7 +686,7 @@
       return merged ? merged.length : 0;
     }
     function mergeKnown(remoteKnown) {
-      const merged = mergeDictionary(loadKnown(), remoteKnown, 'name');
+      const merged = mergeDictionary(loadKnown(), remoteKnown, 'name', mergeShelfLife);
       if (merged) saveKnownQuiet(merged);
       return merged ? merged.length : 0;
     }
@@ -1078,9 +1091,13 @@
     }
 
     function renderInventory() {
+      document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === activeFilter));
+      renderCategoryFilterRow();
       const query = $('searchInput').value.trim().toLowerCase();
       let items = loadItems();
-      if (activeFilter !== '全部') items = items.filter(item => item.storageLocation === activeFilter);
+      // 兩排篩選共存但不疊加：類型篩選生效時忽略位置，兩者不會 AND 在一起。
+      if (activeCategoryFilter !== '全部') items = items.filter(item => item.category === activeCategoryFilter);
+      else if (activeFilter !== '全部') items = items.filter(item => item.storageLocation === activeFilter);
       if (query) items = items.filter(item => item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query));
       const list = $('inventoryList');
       if (!items.length) { list.innerHTML = `<div class="empty-state"><span class="empty-icon">${query ? '🔎' : '📦'}</span><b>${query ? '找不到相符食材' : '這裡還沒有食材'}</b><p>${query ? '換個關鍵字試試看。' : '從下方「新增」建立第一筆食材。'}</p></div>`; return; }
@@ -1105,6 +1122,14 @@
       const previous = $('category').value;
       $('category').innerHTML = '<option value="">請選擇</option>' + categoryNames().map(name => `<option>${escapeHtml(name)}</option>`).join('');
       $('category').value = previous;
+      renderCategoryFilterRow();
+    }
+    // 類型可能被改名或刪除，若目前篩選的類型已不存在就重置，避免篩出空清單卻看不出原因。
+    function renderCategoryFilterRow() {
+      if (!categoryNames().includes(activeCategoryFilter)) activeCategoryFilter = '全部';
+      const buttons = ['<button class="filter' + (activeCategoryFilter === '全部' ? ' active' : '') + '" type="button" data-category-filter="全部">全部類型</button>']
+        .concat(settings.categories.map(entry => `<button class="filter${activeCategoryFilter === entry.name ? ' active' : ''}" type="button" data-category-filter="${escapeHtml(entry.name)}">${entry.emoji} ${escapeHtml(entry.name)}</button>`));
+      $('categoryFilterRow').innerHTML = buttons.join('');
     }
 
     function prepareForm(item = null, sourceShoppingId = '', options = {}) {
@@ -1307,6 +1332,7 @@
         // 一併搬移既有食材，避免留下指向舊名稱的孤兒資料。
         const items = loadItems();
         if (items.some(item => item.category === oldName)) saveItems(items.map(item => item.category === oldName ? { ...item, category: trimmed, updatedAt: new Date().toISOString() } : item));
+        if (activeCategoryFilter === oldName) activeCategoryFilter = trimmed;
         refreshCategoryOptions();
       }
       return '';
@@ -1317,7 +1343,12 @@
       const edit = event.target.closest('[data-edit]'); if (edit) return openAdd(loadItems().find(i => i.id === edit.dataset.edit));
       const useUp = event.target.closest('[data-useup]'); if (useUp) return askUseUp(useUp.dataset.useup);
       const del = event.target.closest('[data-delete]'); if (del) return askDeleteItem(del.dataset.delete);
-      const loc = event.target.closest('[data-location]'); if (loc) { activeFilter = loc.dataset.location; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.filter === activeFilter)); return setView('inventory'); }
+      const loc = event.target.closest('[data-location]');
+      if (loc) { activeFilter = loc.dataset.location; activeCategoryFilter = '全部'; return setView('inventory'); }
+      const filter = event.target.closest('[data-filter]');
+      if (filter) { activeFilter = filter.dataset.filter; activeCategoryFilter = '全部'; renderInventory(); return; }
+      const categoryFilter = event.target.closest('[data-category-filter]');
+      if (categoryFilter) { activeCategoryFilter = categoryFilter.dataset.categoryFilter; activeFilter = '全部'; renderInventory(); return; }
       if (event.target.closest('[data-open-add]')) return openAdd();
       if (event.target.closest('[data-open-scan]')) return openScan();
       if (event.target.closest('[data-open-photo]')) return openPhoto();
@@ -1392,7 +1423,6 @@
       }
     });
 
-    document.querySelectorAll('.filter').forEach(button => button.addEventListener('click', () => { activeFilter = button.dataset.filter; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b === button)); renderInventory(); }));
     $('saveFridgeName').addEventListener('click', () => {
       const name = $('fridgeName').value.trim();
       if (!name) { $('fridgeNameError').textContent = '請輸入名稱'; return; }
