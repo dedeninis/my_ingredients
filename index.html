@@ -217,6 +217,20 @@
     .shopping-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
     .small-button { min-height: 34px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--field); color: var(--ink); font-size: .78rem; font-weight: 700; }
     .small-button.convert { border-color: var(--leaf); background: var(--leaf-soft); color: var(--leaf-ink); }
+    .log-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 4px; }
+    .log-card { display: block; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); text-align: left; }
+    .log-card .log-thumb { display: grid; place-items: center; width: 100%; aspect-ratio: 4 / 3; background: var(--meta-bg); font-size: 1.8rem; overflow: hidden; }
+    .log-card .log-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .log-card .log-info { padding: 10px 11px; }
+    .log-card .log-info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-card .log-info span { display: block; margin-top: 3px; color: var(--muted); font-size: .78rem; }
+    .log-item-picker { display: grid; gap: 8px; margin-top: 7px; max-height: 260px; overflow-y: auto; }
+    .log-item-row { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .log-item-row input { width: 20px; height: 20px; accent-color: var(--leaf); }
+    .log-item-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-photo-preview { margin-top: 10px; }
+    .log-photo-preview img { display: block; width: 100%; max-height: 220px; border-radius: 14px; object-fit: cover; }
+    .log-detail-photo { width: 100%; max-height: 320px; border-radius: 18px; object-fit: cover; margin-bottom: 14px; }
     .settings-group { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
     .settings-group h2 { margin-bottom: 12px; }
     .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
@@ -250,7 +264,7 @@
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
       <section class="section"><div class="section-head"><h2>🍳 今日料理建議</h2></div><button class="suggestion-entry" data-nav-to="suggestion" type="button"><span><b id="suggestionHeadline">看看現有食材可以做什麼</b><small id="suggestionSubline">依冰箱裡的食材給建議</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
-      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-open-photo type="button"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-open-photo type="button"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" data-nav-to="log" type="button"><span class="action-icon">📓</span><span class="action-label">美食日誌</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
     </section>
 
     <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
@@ -332,6 +346,39 @@
       <div id="shoppingList" class="shopping-list"></div>
     </section>
 
+    <section id="logView" class="view" aria-labelledby="logTitle">
+      <header class="topbar"><div><p class="eyebrow">用了哪些食材</p><h1 id="logTitle">美食日誌</h1></div><button class="icon-button" data-open-log-form type="button" aria-label="新增日誌">＋</button></header>
+      <div id="logList" class="log-list"></div>
+    </section>
+
+    <section id="logFormView" class="view" aria-labelledby="logFormTitle">
+      <header class="topbar"><div><p class="eyebrow">記錄這一餐</p><h1 id="logFormTitle">新增日誌</h1></div><button class="icon-button" data-nav-to="log" type="button" aria-label="回日誌">×</button></header>
+      <form id="logForm" class="form-card" novalidate>
+        <p>選擇用掉的食材後儲存，這些食材會從庫存移除並記住其分類與保存天數。</p>
+        <div class="form-grid">
+          <div class="field full"><label for="logDate">日期</label><input id="logDate" name="logDate" type="date" required /><span class="field-error" id="logDateError"></span></div>
+          <div class="field full"><label for="logDishName">料理名稱</label><input id="logDishName" name="logDishName" placeholder="例如：番茄炒蛋" required /><span class="field-error" id="logDishNameError"></span></div>
+        </div>
+        <div class="field full">
+          <label>用了哪些食材</label>
+          <div id="logItemPicker" class="log-item-picker"></div>
+          <span class="field-error" id="logItemsError"></span>
+        </div>
+        <div class="field full">
+          <label for="logPhotoPickButton">照片（選填）</label>
+          <input id="logPhotoFile" type="file" accept="image/*" capture="environment" hidden />
+          <div class="form-actions"><button class="button secondary wide" id="logPhotoPickButton" type="button">📷 拍攝或選擇照片</button></div>
+          <div id="logPhotoPreview" class="log-photo-preview"></div>
+        </div>
+        <div class="form-actions"><button class="button secondary wide" id="cancelLogForm" type="button">取消</button><button class="button wide" type="submit" id="saveLogButton">儲存日誌</button></div>
+      </form>
+    </section>
+
+    <section id="logDetailView" class="view" aria-labelledby="logDetailTitle">
+      <header class="topbar"><div><p class="eyebrow">美食日誌</p><h1 id="logDetailTitle">查看紀錄</h1></div><button class="icon-button" data-nav-to="log" type="button" aria-label="回到日誌">←</button></header>
+      <div id="logDetailContent"></div>
+    </section>
+
     <section id="settingsView" class="view" aria-labelledby="settingsTitle">
       <header class="topbar"><div><p class="eyebrow">本機偏好</p><h1 id="settingsTitle">設定</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
       <section class="settings-group">
@@ -365,10 +412,11 @@
         <div class="setting-row"><div><b>條碼記錄</b><p id="productDataCount"></p></div><button class="button danger" id="clearProductsButton" type="button">清除條碼</button></div>
         <div class="setting-row"><div><b>食材記憶</b><p id="knownDataCount"></p></div><button class="button danger" id="clearKnownButton" type="button">全部清除</button></div>
         <div id="knownList" class="category-list"></div>
-        <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。</p>
+        <div class="setting-row"><div><b>美食日誌</b><p id="logDataCount"></p></div><button class="button danger" id="clearLogButton" type="button">清除日誌</button></div>
+        <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。日誌的照片存在本機、不會跟著同步。</p>
       </section>
       <section class="settings-group">
-        <h2>發票辨識（Google Gemini）</h2>
+        <h2>拍照辨識（Google Gemini）</h2>
         <div class="form-grid">
           <div class="field full"><label for="aiApiKey">API 金鑰</label><input id="aiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="貼上 Gemini API 金鑰" /></div>
           <div class="field full"><label for="aiModel">模型</label><input id="aiModel" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.5-flash" /></div>
@@ -409,6 +457,11 @@
     const REMINDER_KEY = 'ingredient-manager-v1-reminders';
     const PRODUCT_KEY = 'ingredient-manager-v1-products';
     const KNOWN_KEY = 'ingredient-manager-v1-known';
+    // 美食日誌條目本身是小筆的文字資料，走 localStorage 並跟著雲端同步；
+    // 照片是大型二進位資料，改存 IndexedDB（見下方 DB_NAME），且刻意不同步。
+    const LOG_KEY = 'ingredient-manager-v1-food-log';
+    const DB_NAME = 'ingredient-manager-v1-photos';
+    const DB_STORE = 'photos';
     // 辨識出來的待處理清單。屬於本機的工作狀態，不同步，但要撐過關閉分頁。
     const PHOTO_DRAFT_KEY = 'ingredient-manager-v1-photo-draft';
     // AI 金鑰與同步設定一樣是裝置本機資料，絕不可放進同步內容（Gist 並非私密）。
@@ -435,6 +488,7 @@
     let activeFilter = '全部';
     let activeCategoryFilter = '全部';
     let selectedId = null;
+    let selectedLogId = null;
     let confirmAction = null;
     let renamingCategory = null;
     let settings = loadSettings();
@@ -506,7 +560,7 @@
     function showToast(message) { const el = $('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => el.classList.remove('show'), 2400); }
     function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char])); }
 
-    // ---- 發票辨識（Google Gemini）----
+    // ---- 拍照辨識（Google Gemini）----
     // 金鑰存在獨立的 key，不進 buildPayload，因此永遠不會被同步到 Gist。
     function loadAiState() {
       let stored = {};
@@ -641,6 +695,138 @@
       const remaining = photoItems.filter(entry => !entry.added).length;
       list.innerHTML = `<p class="scan-hint">辨識到 ${photoItems.length} 項食材，還有 ${remaining} 項待加入。點一項就會帶入表單確認後儲存。這份清單會保留到你清空為止，關掉重開也還在。</p><div class="form-actions"><button class="button secondary wide" id="clearPhotoDraft" type="button">清空這份清單</button></div>`
         + photoItems.map((entry, index) => `<article class="shopping-card${entry.added ? ' is-complete' : ''}"><div class="shopping-main"><b>${escapeHtml(entry.name)}</b><span>${entry.quantity} 件${entry.added ? ' · 已加入庫存' : ''}</span></div><div class="shopping-actions">${entry.added ? '' : `<button class="small-button convert" data-photo-add="${index}" type="button">加入</button>`}</div></article>`).join('');
+    }
+
+    // ---- 美食日誌 ----
+    // 條目本身（日期、料理名稱、用了哪些食材）是小筆文字，走 localStorage 並跟著雲端同步；
+    // 照片是大型二進位資料，改存 IndexedDB，且刻意不同步——同步機制是把整包 JSON 塞進一個
+    // Gist，base64 內嵌照片會讓檔案暴增、同步變慢，先讓文字紀錄跨裝置可見就好。
+    function loadLogs() { return readList(LOG_KEY); }
+    function saveLogsQuiet(logs) { localStorage.setItem(LOG_KEY, JSON.stringify(logs)); }
+    function mergeLogs(remoteLogs) {
+      const merged = mergeDictionary(loadLogs(), remoteLogs, 'id');
+      if (merged) saveLogsQuiet(merged);
+      return merged ? merged.length : 0;
+    }
+
+    let photoDb = null;
+    function openPhotoDb() {
+      if (photoDb) return Promise.resolve(photoDb);
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = () => request.result.createObjectStore(DB_STORE);
+        request.onsuccess = () => { photoDb = request.result; resolve(photoDb); };
+        request.onerror = () => reject(request.error);
+      });
+    }
+    async function savePhotoBlob(blob) {
+      const db = await openPhotoDb();
+      const id = crypto.randomUUID();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).put(blob, id);
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+      });
+      return id;
+    }
+    async function getPhotoBlob(id) {
+      if (!id) return null;
+      const db = await openPhotoDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function deletePhotoBlob(id) {
+      if (!id) return;
+      const db = await openPhotoDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).delete(id);
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    // 目前選好要存進日誌的照片，還沒送出表單前先留在記憶體。
+    let logPhotoFile = null;
+    let logObjectUrls = [];
+    // <img> 用的 object URL 要主動釋放，否則每次重新渲染清單都會多洩漏一個。
+    function revokeLogObjectUrls() { logObjectUrls.forEach(url => URL.revokeObjectURL(url)); logObjectUrls = []; }
+
+    function prepareLogForm() {
+      $('logForm').reset();
+      $('logDate').value = isoToday();
+      logPhotoFile = null;
+      $('logPhotoPreview').innerHTML = '';
+      $('logForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
+      const items = sortItems(loadItems());
+      $('logItemPicker').innerHTML = items.length
+        ? items.map(item => `<label class="log-item-row"><input type="checkbox" name="logItem" value="${item.id}" /><span>${emojiFor(item.category)} ${escapeHtml(item.name)}｜${item.quantity} ${escapeHtml(item.unit)}</span></label>`).join('')
+        : '<p class="scan-hint">目前庫存是空的，沒有食材可以選。</p>';
+    }
+    function openLogForm() { prepareLogForm(); setView('logForm'); }
+
+    function renderLogList() {
+      revokeLogObjectUrls();
+      const logs = [...loadLogs()].sort((a, b) => (b.date || '').localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+      const list = $('logList');
+      if (!logs.length) { list.innerHTML = '<div class="empty-state"><span class="empty-icon">📓</span><b>還沒有日誌</b><p>用掉食材做完一道菜後，可以拍照記下來。</p></div>'; return; }
+      list.innerHTML = logs.map(entry => `<button class="log-card" data-log-detail="${entry.id}" type="button"><span class="log-thumb" id="logThumb-${entry.id}">🍽️</span><span class="log-info"><b>${escapeHtml(entry.dishName)}</b><span>${formatDate(entry.date)}</span></span></button>`).join('');
+      logs.forEach(entry => {
+        if (!entry.photoId) return;
+        getPhotoBlob(entry.photoId).then(blob => {
+          const el = document.getElementById(`logThumb-${entry.id}`);
+          if (!blob || !el) return;
+          const url = URL.createObjectURL(blob);
+          logObjectUrls.push(url);
+          el.innerHTML = `<img src="${url}" alt="" />`;
+        });
+      });
+    }
+
+    function renderLogDetail() {
+      revokeLogObjectUrls();
+      const entry = loadLogs().find(log => log.id === selectedLogId);
+      if (!entry) { setView('log'); return; }
+      $('logDetailTitle').textContent = entry.dishName;
+      const itemsHtml = entry.items.length
+        ? entry.items.map(item => `<span class="category-chip">${emojiFor(item.category)} ${escapeHtml(item.name)}</span>`).join('')
+        : '<span class="field-error"></span>';
+      $('logDetailContent').innerHTML = `
+        <article class="detail-panel">
+          <div id="logDetailPhotoSlot"></div>
+          <div class="suggestion-title" style="margin-bottom:5px"><h2 style="margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(entry.dishName)}</h2>${recipeSearchLinks(entry.dishName)}</div>
+          <div class="expiry normal" style="text-align:left;margin-bottom:14px">${formatDate(entry.date)}</div>
+          <div class="section-head" style="margin-top:18px"><h2>用了哪些食材</h2></div>
+          <div class="category-list">${itemsHtml}</div>
+          <div class="form-actions" style="margin-top:20px"><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
+        </article>`;
+      if (entry.photoId) {
+        getPhotoBlob(entry.photoId).then(blob => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          logObjectUrls.push(url);
+          const slot = document.getElementById('logDetailPhotoSlot');
+          if (slot) slot.innerHTML = `<img class="log-detail-photo" src="${url}" alt="${escapeHtml(entry.dishName)}" />`;
+        });
+      }
+    }
+    function openLogDetail(id) { selectedLogId = id; setView('logDetail'); }
+
+    function askDeleteLog(id) {
+      const entry = loadLogs().find(log => log.id === id);
+      if (!entry) return;
+      askConfirm({
+        title: '確定刪除這篇日誌？', text: '刪除後無法復原，紀錄與照片都會從這台裝置移除。', confirmLabel: '確定刪除',
+        onConfirm: async () => {
+          if (entry.photoId) await deletePhotoBlob(entry.photoId);
+          saveLogsQuiet(loadLogs().filter(log => log.id !== id));
+          markDataChanged();
+          showToast('已刪除日誌'); setView('log');
+        }
+      });
     }
 
     // ---- 條碼（PRD 7.6）----
@@ -1012,7 +1198,7 @@
     }
 
     function buildPayload() {
-      return { version: 1, updatedAt: syncState.localUpdatedAt || new Date().toISOString(), items: loadItems(), shoppingItems: loadShoppingItems(), settings, products: loadProducts(), known: loadKnown() };
+      return { version: 1, updatedAt: syncState.localUpdatedAt || new Date().toISOString(), items: loadItems(), shoppingItems: loadShoppingItems(), settings, products: loadProducts(), known: loadKnown(), logs: loadLogs() };
     }
     function applyPayload(payload) {
       applyingRemote = true;
@@ -1024,7 +1210,7 @@
       syncReminders();
       refreshCategoryOptions();
     }
-    function renderAll() { renderHome(); renderInventory(); renderShopping(); renderSettings(); }
+    function renderAll() { renderHome(); renderInventory(); renderShopping(); renderSettings(); renderLogList(); }
 
     async function gistRequest(method, body) {
       const response = await fetch(`https://api.github.com/gists/${encodeURIComponent(syncState.gistId)}`, {
@@ -1083,7 +1269,8 @@
         // 兩個字典都要合併，不能用 || 短路掉其中一個。
         const productsGrew = remote ? mergeProducts(remote.products) > 0 : false;
         const knownGrew = remote ? mergeKnown(remote.known) > 0 : false;
-        const poolGrew = productsGrew || knownGrew;
+        const logsGrew = remote ? mergeLogs(remote.logs) > 0 : false;
+        const poolGrew = productsGrew || knownGrew || logsGrew;
         const remoteChanged = !!remote && remote.updatedAt !== syncState.remoteUpdatedAt;
         if (!remote) { await pushPayload(); if (!silent) showToast('已上傳到雲端'); }
         else if (remoteChanged && localDirty) {
@@ -1186,7 +1373,7 @@
     }
     function closeConfirm() { $('confirmDialog').close(); confirmAction = null; }
 
-    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions };
+    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions, log: renderLogList, logDetail: renderLogDetail };
     function setView(view) {
       if (view !== 'add') stopScan();   // 離開新增頁一定要關掉相機
       document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -1427,11 +1614,13 @@
       $('gistToken').value = syncState.token;
       $('aiApiKey').value = aiState.apiKey;
       $('aiModel').value = aiState.model;
-      $('aiStatus').textContent = aiConfigured() ? `已設定，使用模型 ${aiState.model}。` : '尚未設定，發票辨識無法使用。';
+      $('aiStatus').textContent = aiConfigured() ? `已設定，使用模型 ${aiState.model}。` : '尚未設定，拍照辨識無法使用。';
       updateSyncStatusText();
       $('inventoryDataCount').textContent = `目前共有 ${loadItems().length} 項食材。`;
       $('shoppingDataCount').textContent = `目前共有 ${loadShoppingItems().length} 項採買項目。`;
       $('productDataCount').textContent = `已記住 ${loadProducts().length} 組商品條碼，掃描時自動帶出。`;
+      const logs = loadLogs();
+      $('logDataCount').textContent = `已記錄 ${logs.length} 篇日誌，照片只存在這台裝置。`;
       const known = loadKnown();
       $('knownDataCount').textContent = `已記住 ${known.length} 項食材，輸入同名時自動帶入分類、單位、位置與推估保存期限。`;
       $('knownList').innerHTML = [...known]
@@ -1488,6 +1677,9 @@
         return;
       }
       if (event.target.closest('[data-open-inventory]')) return setView('inventory');
+      if (event.target.closest('[data-open-log-form]')) return openLogForm();
+      const logDetail = event.target.closest('[data-log-detail]'); if (logDetail) return openLogDetail(logDetail.dataset.logDetail);
+      const deleteLog = event.target.closest('[data-delete-log]'); if (deleteLog) return askDeleteLog(deleteLog.dataset.deleteLog);
       if (event.target.closest('[data-go-home]')) return setView('home');
       const navTo = event.target.closest('[data-nav-to]'); if (navTo) return setView(navTo.dataset.navTo);
       const nav = event.target.closest('[data-nav]');
@@ -1626,6 +1818,52 @@
       renderShopping();
     });
     $('cancelShoppingForm').addEventListener('click', () => prepareShoppingForm());
+
+    $('logPhotoPickButton').addEventListener('click', () => $('logPhotoFile').click());
+    $('logPhotoFile').addEventListener('change', async event => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) return;
+      // 這裡要保留給回頭看的畫質，比辨識用的縮圖留大一些。
+      const dataUrl = 'data:image/jpeg;base64,' + await downscaleImage(file, 1400, 0.85);
+      logPhotoFile = await (await fetch(dataUrl)).blob();
+      $('logPhotoPreview').innerHTML = `<img src="${dataUrl}" alt="" />`;
+    });
+    $('cancelLogForm').addEventListener('click', () => setView('log'));
+    $('logForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const raw = Object.fromEntries(new FormData(event.currentTarget));
+      $('logDateError').textContent = ''; $('logDishNameError').textContent = ''; $('logItemsError').textContent = '';
+      let valid = true;
+      if (!raw.logDate) { $('logDateError').textContent = '請選擇日期'; valid = false; }
+      if (!raw.logDishName?.trim()) { $('logDishNameError').textContent = '請輸入料理名稱'; valid = false; }
+      const checkedIds = [...$('logItemPicker').querySelectorAll('input[name="logItem"]:checked')].map(el => el.value);
+      if (!checkedIds.length) { $('logItemsError').textContent = '請至少選一項用掉的食材'; valid = false; }
+      if (!valid) return;
+
+      const button = $('saveLogButton');
+      button.disabled = true; button.textContent = '儲存中…';
+      try {
+        const allItems = loadItems();
+        const used = allItems.filter(item => checkedIds.includes(item.id));
+        const photoId = logPhotoFile ? await savePhotoBlob(logPhotoFile) : null;
+        const entry = {
+          id: crypto.randomUUID(), date: raw.logDate, dishName: raw.logDishName.trim(),
+          items: used.map(item => ({ name: item.name, category: item.category })),
+          photoId, createdAt: new Date().toISOString()
+        };
+        saveLogsQuiet([...loadLogs(), entry]);
+        markDataChanged();
+        // 這道菜同時用掉了好幾樣食材：逐一移出庫存並餵進食材記憶，等同對每一項各按一次「用完了」。
+        used.forEach(item => rememberIngredient(item));
+        saveItems(allItems.filter(item => !checkedIds.includes(item.id)));
+        syncReminders();
+        showToast('已儲存日誌');
+        setView('log');
+      } finally {
+        button.disabled = false; button.textContent = '儲存日誌';
+      }
+    });
     $('photoPickButton').addEventListener('click', () => $('photoFile').click());
     $('photoFile').addEventListener('change', async event => {
       const file = event.target.files?.[0];
@@ -1705,6 +1943,17 @@
     $('clearShoppingButton').addEventListener('click', () => askClearData(SHOPPING_KEY, '採買清單'));
     $('clearProductsButton').addEventListener('click', () => askClearData(PRODUCT_KEY, '條碼記錄'));
     $('clearKnownButton').addEventListener('click', () => askClearData(KNOWN_KEY, '食材記憶'));
+    $('clearLogButton').addEventListener('click', () => {
+      askConfirm({
+        title: '確定清除美食日誌？', text: '這台裝置上的日誌紀錄與照片會全部移除，且無法復原。請再次確認。', confirmLabel: '確定清除',
+        onConfirm: async () => {
+          const logs = loadLogs();
+          await Promise.all(logs.filter(entry => entry.photoId).map(entry => deletePhotoBlob(entry.photoId)));
+          saveLogsQuiet([]); markDataChanged();
+          showToast('已清除美食日誌'); renderSettings();
+        }
+      });
+    });
 
     $('dialogCancel').addEventListener('click', closeConfirm);
     $('dialogConfirm').addEventListener('click', () => { const action = confirmAction; closeConfirm(); action?.(); });
