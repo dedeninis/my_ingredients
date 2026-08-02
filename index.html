@@ -755,18 +755,27 @@
     // <img> 用的 object URL 要主動釋放，否則每次重新渲染清單都會多洩漏一個。
     function revokeLogObjectUrls() { logObjectUrls.forEach(url => URL.revokeObjectURL(url)); logObjectUrls = []; }
 
-    function prepareLogForm() {
+    // prefill 讓料理建議卡片可以帶著菜名與已知食材直接開表單；欄位仍是一般表單欄位，
+    // 使用者存檔前都能自由修改，不會因為從建議帶入就少了編輯彈性。
+    function prepareLogForm(prefill = {}) {
       $('logForm').reset();
       $('logDate').value = isoToday();
+      $('logDishName').value = prefill.dishName || '';
       logPhotoFile = null;
       $('logPhotoPreview').innerHTML = '';
       $('logForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
       const items = sortItems(loadItems());
+      const preselected = new Set(prefill.itemIds || []);
       $('logItemPicker').innerHTML = items.length
-        ? items.map(item => `<label class="log-item-row"><input type="checkbox" name="logItem" value="${item.id}" /><span>${emojiFor(item.category)} ${escapeHtml(item.name)}｜${item.quantity} ${escapeHtml(item.unit)}</span></label>`).join('')
+        ? items.map(item => `<label class="log-item-row"><input type="checkbox" name="logItem" value="${item.id}"${preselected.has(item.id) ? ' checked' : ''} /><span>${emojiFor(item.category)} ${escapeHtml(item.name)}｜${item.quantity} ${escapeHtml(item.unit)}</span></label>`).join('')
         : '<p class="scan-hint">目前庫存是空的，沒有食材可以選。</p>';
     }
-    function openLogForm() { prepareLogForm(); setView('logForm'); }
+    function openLogForm(prefill) { prepareLogForm(prefill); setView('logForm'); }
+    // 建議卡片是頁面載入當下的快照，開表單前重新核對一次，只預先勾選現在仍在庫存裡的食材。
+    function openLogFormFromSuggestion(dishName, usedIds) {
+      const currentIds = new Set(loadItems().map(item => item.id));
+      openLogForm({ dishName, itemIds: usedIds.filter(id => currentIds.has(id)) });
+    }
 
     function renderLogList() {
       revokeLogObjectUrls();
@@ -1164,7 +1173,7 @@
           list.innerHTML = `<div class="empty-state"><span class="empty-icon">${hasUsable ? '🤔' : '📦'}</span><b>${hasUsable ? '目前的食材組合還沒有對應建議' : '冰箱裡還沒有可用食材'}</b><p>${hasUsable ? '再新增幾樣常見食材，這裡就會出現搭配。' : '先新增食材，這裡就會依庫存給建議。'}${aiHintExtra}</p></div>`;
           return;
         }
-        list.innerHTML = suggestions.map(entry => `<article class="suggestion-card"><div class="suggestion-title"><h3>${escapeHtml(entry.name)}</h3>${recipeSearchLinks(entry.name)}</div><div class="used">可使用：${entry.used.map(item => `${emojiFor(item.category)} ${escapeHtml(item.name)}`).join('、')}</div>${entry.reason ? `<div class="reason"><span aria-hidden="true">⚠️</span><span>${escapeHtml(entry.reason)}</span></div>` : ''}</article>`).join('');
+        list.innerHTML = suggestions.map(entry => `<article class="suggestion-card"><div class="suggestion-title"><h3>${escapeHtml(entry.name)}</h3>${recipeSearchLinks(entry.name)}</div><div class="used">可使用：${entry.used.map(item => `${emojiFor(item.category)} ${escapeHtml(item.name)}`).join('、')}</div>${entry.reason ? `<div class="reason"><span aria-hidden="true">⚠️</span><span>${escapeHtml(entry.reason)}</span></div>` : ''}<div class="shopping-actions" style="margin-top:10px"><button class="small-button convert" data-log-from-suggestion="${escapeHtml(entry.name)}" data-used-ids="${entry.used.map(item => item.id).join(',')}" type="button">📓 加入美食日誌</button></div></article>`).join('');
       });
     }
 
@@ -1678,6 +1687,11 @@
       }
       if (event.target.closest('[data-open-inventory]')) return setView('inventory');
       if (event.target.closest('[data-open-log-form]')) return openLogForm();
+      const logFromSuggestion = event.target.closest('[data-log-from-suggestion]');
+      if (logFromSuggestion) {
+        const usedIds = logFromSuggestion.dataset.usedIds ? logFromSuggestion.dataset.usedIds.split(',') : [];
+        return openLogFormFromSuggestion(logFromSuggestion.dataset.logFromSuggestion, usedIds);
+      }
       const logDetail = event.target.closest('[data-log-detail]'); if (logDetail) return openLogDetail(logDetail.dataset.logDetail);
       const deleteLog = event.target.closest('[data-delete-log]'); if (deleteLog) return askDeleteLog(deleteLog.dataset.deleteLog);
       if (event.target.closest('[data-go-home]')) return setView('home');
