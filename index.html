@@ -883,9 +883,10 @@
     async function shareLogEntry(id) {
       const entry = loadLogs().find(log => log.id === id);
       if (!entry || typeof navigator.share !== 'function') return;
-      // title 跟 text 在不同接收 App（LINE、訊息、Instagram）上顯示與否不一致，
-      // 兩者都填料理名稱才能確保名稱在各種 App 上都看得到；只分享照片與名稱，不附日期與食材列表。
-      const shareData = { title: entry.dishName, text: entry.dishName };
+      // 有照片＋文字同時傳給接收端 App 時，怎麼呈現完全由那個 App 決定（規格本身就這樣寫），
+      // LINE 等 App 常見的行為是圖片進聊天室、title/text 卻不顯示。同時填兩者曾在其他 App
+      // 造成互相蓋掉，只留 text、title 留空是已知有效的解法，這裡跟著採用。
+      const shareData = { text: entry.dishName };
       if (entry.photoId) {
         const blob = await getPhotoBlob(entry.photoId);
         if (blob) {
