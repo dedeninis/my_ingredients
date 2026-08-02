@@ -196,11 +196,12 @@
     .suggestion-entry small { display: block; margin-top: 4px; color: var(--muted); font-size: .84rem; }
     .suggestion-list { display: grid; gap: 10px; }
     .suggestion-card { padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 8px rgba(38,61,48,.025); }
-    .suggestion-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
-    .suggestion-card h3 { margin: 0; font-size: 1.04rem; letter-spacing: -.02em; }
-    .suggestion-search { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .suggestion-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 9px; }
+    .suggestion-card h3 { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.04rem; letter-spacing: -.02em; }
+    .suggestion-search { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
     .suggestion-search .label { color: var(--muted); font-size: .78rem; white-space: nowrap; }
-    .suggestion-search a { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--meta-bg); font-size: .94rem; text-decoration: none; }
+    /* 依「儘量放大」的要求盡量加大，同時保持三個一排不換行、不擠壓菜名。 */
+    .suggestion-search a { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--meta-bg); font-size: 1.55rem; line-height: 1; text-decoration: none; }
     .suggestion-search a:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
     .suggestion-card .used { color: var(--muted); font-size: .86rem; line-height: 1.6; }
     .suggestion-card .reason { display: flex; gap: 7px; margin-top: 10px; padding: 9px 11px; border-radius: 11px; background: var(--sun-soft); color: var(--warn-ink); font-size: .84rem; line-height: 1.5; }
