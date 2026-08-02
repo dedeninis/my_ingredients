@@ -194,6 +194,15 @@
     .suggestion-entry:hover { border-color: var(--leaf); }
     .suggestion-entry b { display: block; }
     .suggestion-entry small { display: block; margin-top: 4px; color: var(--muted); font-size: .84rem; }
+    /* 首頁的日誌預覽：跟 suggestion-entry 同一套視覺語言，但左側多一格縮圖，
+       讓「你已經記錄過什麼」在首頁就看得到，而不是要點進日誌才知道。 */
+    .log-preview { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-align: left; box-shadow: 0 2px 8px rgba(38,61,48,.025); }
+    .log-preview:hover { border-color: var(--leaf); }
+    .log-preview-thumb { display: grid; place-items: center; flex: 0 0 54px; width: 54px; height: 54px; border-radius: 12px; background: var(--meta-bg); font-size: 1.5rem; overflow: hidden; }
+    .log-preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .log-preview-info { flex: 1; min-width: 0; }
+    .log-preview-info b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-preview-info small { display: block; margin-top: 4px; color: var(--muted); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .suggestion-list { display: grid; gap: 10px; }
     .suggestion-card { padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 8px rgba(38,61,48,.025); }
     .suggestion-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; margin-bottom: 9px; }
@@ -203,6 +212,10 @@
     /* 依「儘量放大」的要求盡量加大，同時保持三個一排不換行、不擠壓菜名。 */
     .suggestion-search a { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--meta-bg); font-size: 1.55rem; line-height: 1; text-decoration: none; }
     .suggestion-search a:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
+    /* 分享是次要動作，不該跟「儲存日誌」搶同一種滿版主色的視覺份量，
+       改用跟料理搜尋捷徑同一套小圖示樣式，內斂但仍看得到。 */
+    .log-share-icon { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--meta-bg); color: var(--ink); font-size: 1.25rem; line-height: 1; }
+    .log-share-icon:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
     .suggestion-card .used { color: var(--muted); font-size: .86rem; line-height: 1.6; }
     .suggestion-card .reason { display: flex; gap: 7px; margin-top: 10px; padding: 9px 11px; border-radius: 11px; background: var(--sun-soft); color: var(--warn-ink); font-size: .84rem; line-height: 1.5; }
     .suggestion-note { margin: 0 0 14px; color: var(--muted); font-size: .86rem; line-height: 1.6; }
@@ -266,8 +279,9 @@
       <section class="hero" aria-label="冰箱摘要"><div class="hero-row"><div><p>目前冰箱狀態</p><strong id="heroText">還沒有食材</strong></div><div class="fridge" aria-hidden="true">🧊</div></div></section>
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
       <section class="section"><div class="section-head"><h2>🍳 今日料理建議</h2></div><button class="suggestion-entry" data-nav-to="suggestion" type="button"><span><b id="suggestionHeadline">看看現有食材可以做什麼</b><small id="suggestionSubline">依冰箱裡的食材給建議</small></span><span class="chevron">›</span></button></section>
+      <section class="section"><div class="section-head"><h2>📓 美食日誌</h2><button class="text-button" data-nav-to="log" type="button">查看全部</button></div><button class="log-preview" data-nav-to="log" type="button"><span class="log-preview-thumb" id="homeLogThumb">📓</span><span class="log-preview-info"><b id="homeLogHeadline">還沒有日誌</b><small id="homeLogSubline">用掉食材做完一道菜後，可以拍照記下來</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
-      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-open-photo type="button"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" data-nav-to="log" type="button"><span class="action-icon">📓</span><span class="action-label">美食日誌</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-open-photo type="button"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
     </section>
 
     <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
@@ -827,9 +841,34 @@
       openLogForm({ editingEntry: entry });
     }
 
+    function sortedLogs() { return [...loadLogs()].sort((a, b) => (b.date || '').localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)); }
+    // 首頁的日誌區塊要讓人一眼看到「上次記錄了什麼」，不是只有一個入口按鈕——
+    // 沒有這個，使用者辛苦拍的照片回到首頁完全看不到痕跡，變成沒人想維護的紀錄本。
+    function renderHomeLogPreview() {
+      const latest = sortedLogs()[0];
+      const thumb = $('homeLogThumb');
+      if (!latest) {
+        $('homeLogHeadline').textContent = '還沒有日誌';
+        $('homeLogSubline').textContent = '用掉食材做完一道菜後，可以拍照記下來';
+        thumb.innerHTML = '📓';
+        return;
+      }
+      $('homeLogHeadline').textContent = latest.dishName;
+      const itemsText = latest.items.length ? `｜${latest.items.map(item => item.name).join('、')}` : '';
+      $('homeLogSubline').textContent = `${formatDate(latest.date)}${itemsText}`;
+      thumb.innerHTML = '📓';
+      if (latest.photoId) {
+        getPhotoBlob(latest.photoId).then(blob => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          logObjectUrls.push(url);
+          thumb.innerHTML = `<img src="${url}" alt="" />`;
+        });
+      }
+    }
     function renderLogList() {
       revokeLogObjectUrls();
-      const logs = [...loadLogs()].sort((a, b) => (b.date || '').localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+      const logs = sortedLogs();
       const list = $('logList');
       if (!logs.length) { list.innerHTML = '<div class="empty-state"><span class="empty-icon">📓</span><b>還沒有日誌</b><p>用掉食材做完一道菜後，可以拍照記下來。</p></div>'; return; }
       list.innerHTML = logs.map(entry => `<button class="log-card" data-log-detail="${entry.id}" type="button"><span class="log-thumb" id="logThumb-${entry.id}">🍽️</span><span class="log-info"><b>${escapeHtml(entry.dishName)}</b><span>${formatDate(entry.date)}</span></span></button>`).join('');
@@ -857,11 +896,10 @@
         <article class="detail-panel">
           <div id="logDetailPhotoSlot"></div>
           <div class="suggestion-title" style="margin-bottom:5px"><h2 style="margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(entry.dishName)}</h2>${recipeSearchLinks(entry.dishName)}</div>
-          <div class="expiry normal" style="text-align:left;margin-bottom:14px">${formatDate(entry.date)}</div>
+          <div class="suggestion-title" style="margin-bottom:14px"><span class="expiry normal" style="text-align:left">${formatDate(entry.date)}</span><button class="log-share-icon" id="logShareButton" data-share-log="${entry.id}" type="button" hidden aria-label="分享這篇日誌" title="分享">📤</button></div>
           <div class="section-head" style="margin-top:18px"><h2>用了哪些食材</h2></div>
           <div class="category-list">${itemsHtml}</div>
-          <div class="form-actions" style="margin-top:20px"><button class="button wide" id="logShareButton" data-share-log="${entry.id}" type="button" hidden>📤 分享</button></div>
-          <div class="form-actions"><button class="button secondary wide" data-edit-log="${entry.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
+          <div class="form-actions" style="margin-top:20px"><button class="button secondary wide" data-edit-log="${entry.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
         </article>`;
       // navigator.share 不是所有瀏覽器都有（Firefox 目前預設關閉），偵測不到就整顆按鈕不顯示，
       // 不要顯示一顆按下去必定失敗的按鈕。
@@ -1468,6 +1506,7 @@
     }
 
     function renderHome() {
+      revokeLogObjectUrls(); // 集中管理縮圖用的 blob URL，避免每次回首頁都多洩漏一個。
       const items = loadItems();
       $('todayLabel').textContent = new Intl.DateTimeFormat('zh-TW', { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date());
       $('countCold').textContent = `${items.filter(i => i.storageLocation === '冷藏').length} 項`;
@@ -1482,6 +1521,7 @@
         $('suggestionHeadline').textContent = top ? `今天可以做「${top.name}」` : '看看現有食材可以做什麼';
         $('suggestionSubline').textContent = top ? (top.reason || `可使用：${top.used.map(item => item.name).join('、')}`) : '依冰箱裡的食材給建議';
       });
+      renderHomeLogPreview();
       const container = $('expiryNotice');
       if (!expiring.length) { container.className = 'notice empty'; container.innerHTML = '<div class="notice-item"><div class="notice-icon">✨</div><div class="notice-main"><b>目前沒有即將到期食材</b><span>新增食材後，這裡會協助提醒你。</span></div></div>'; return; }
       container.className = 'notice urgent';
