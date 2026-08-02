@@ -198,7 +198,8 @@
     .suggestion-card { padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 8px rgba(38,61,48,.025); }
     .suggestion-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
     .suggestion-card h3 { margin: 0; font-size: 1.04rem; letter-spacing: -.02em; }
-    .suggestion-search { display: flex; gap: 4px; flex: 0 0 auto; }
+    .suggestion-search { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .suggestion-search .label { color: var(--muted); font-size: .78rem; white-space: nowrap; }
     .suggestion-search a { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--meta-bg); font-size: .94rem; text-decoration: none; }
     .suggestion-search a:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
     .suggestion-card .used { color: var(--muted); font-size: .86rem; line-height: 1.6; }
@@ -868,7 +869,7 @@
         { key: 'cookpad', label: 'Cookpad', emoji: '🍳', url: `https://cookpad.com/tw/搜尋/${encoded}` },
         { key: 'icook', label: '愛料理', emoji: '🍚', url: `https://icook.tw/search/${encoded}` }
       ];
-      return `<div class="suggestion-search">${targets.map(t =>
+      return `<div class="suggestion-search"><span class="label" aria-hidden="true">參考食譜</span>${targets.map(t =>
         `<a href="${t.url}" target="_blank" rel="noopener" aria-label="到 ${t.label} 搜尋「${escapeHtml(dishName)}」的做法" title="${t.label}">${t.emoji}</a>`
       ).join('')}</div>`;
     }
