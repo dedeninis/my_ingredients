@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f6f6f1" />
   <title>我的冰箱｜食材管理</title>
+  <script>
+    // 在第一次繪製前就決定深淺色，否則深色模式開啟時會先閃一下白底。
+    try {
+      var saved = JSON.parse(localStorage.getItem('ingredient-manager-v1-settings') || '{}');
+      var choice = saved.theme === 'light' || saved.theme === 'dark' ? saved.theme
+        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = choice;
+    } catch (e) { document.documentElement.dataset.theme = 'light'; }
+  </script>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon-192.png" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
@@ -14,6 +23,7 @@
   <meta name="apple-mobile-web-app-title" content="我的冰箱" />
   <style>
     :root, :root[data-theme="light"] {
+      color-scheme: light;
       --bg: #f6f6f1;
       --surface: #ffffff;
       --ink: #24332b;
@@ -40,6 +50,7 @@
       --shadow: 0 8px 26px rgba(38, 61, 48, .08);
     }
     :root[data-theme="dark"] {
+      color-scheme: dark;
       --bg: #121814;
       --surface: #1b231e;
       --ink: #e7efe9;
@@ -148,6 +159,7 @@
     input, select { height: 44px; padding: 0 11px; }
     textarea { min-height: 76px; padding: 10px 11px; resize: vertical; }
     .field-error { min-height: 1.1em; color: var(--red); font-size: .78rem; }
+    .field-hint { color: var(--muted); font-size: .78rem; line-height: 1.5; }
     .form-actions { display: flex; gap: 10px; margin-top: 18px; }
     .button { min-height: 46px; padding: 0 16px; border: 1px solid var(--leaf); border-radius: 12px; background: var(--leaf); color: var(--on-leaf); font-weight: 800; }
     .button.secondary { border-color: var(--line); background: var(--field); color: var(--ink); }
@@ -271,7 +283,7 @@
           <div class="field"><label for="storageLocation">存放位置</label><select id="storageLocation" name="storageLocation" required><option value="">請選擇</option><option>冷藏</option><option>冷凍</option><option>常溫</option></select><span class="field-error" id="storageLocationError"></span></div>
           <div class="field"><label for="quantity">數量</label><input id="quantity" name="quantity" type="number" inputmode="decimal" min="0.01" step="any" placeholder="例如：2" required /><span class="field-error" id="quantityError"></span></div>
           <div class="field"><label for="unit">單位</label><select id="unit" name="unit" required></select><span class="field-error" id="unitError"></span></div>
-          <div class="field full"><label for="expiryDate">保存期限</label><input id="expiryDate" name="expiryDate" type="date" required /><span class="field-error" id="expiryDateError"></span></div>
+          <div class="field full"><label for="expiryDate">保存期限</label><input id="expiryDate" name="expiryDate" type="date" required /><span class="field-error" id="expiryDateError"></span><span class="field-hint" id="expiryHint"></span></div>
           <div class="field full"><label for="barcode">商品條碼（選填）</label><input id="barcode" name="barcode" type="text" inputmode="numeric" autocomplete="off" placeholder="掃描後會自動填入，也可自行輸入" /><span class="field-error" id="barcodeError"></span></div>
         </div>
         <div class="form-actions"><button class="button secondary wide" id="cancelForm" type="button">取消</button><button class="button wide" type="submit" id="saveButton">加入庫存</button></div>
@@ -336,7 +348,8 @@
         <div class="setting-row"><div><b>庫存資料</b><p id="inventoryDataCount"></p></div><button class="button danger" id="clearInventoryButton" type="button">清除庫存</button></div>
         <div class="setting-row"><div><b>採買清單</b><p id="shoppingDataCount"></p></div><button class="button danger" id="clearShoppingButton" type="button">清除清單</button></div>
         <div class="setting-row"><div><b>條碼記錄</b><p id="productDataCount"></p></div><button class="button danger" id="clearProductsButton" type="button">清除條碼</button></div>
-        <div class="setting-row"><div><b>食材記憶</b><p id="knownDataCount"></p></div><button class="button danger" id="clearKnownButton" type="button">清除記憶</button></div>
+        <div class="setting-row"><div><b>食材記憶</b><p id="knownDataCount"></p></div><button class="button danger" id="clearKnownButton" type="button">全部清除</button></div>
+        <div id="knownList" class="category-list"></div>
         <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。</p>
       </section>
       <section class="settings-group">
@@ -381,6 +394,8 @@
     const REMINDER_KEY = 'ingredient-manager-v1-reminders';
     const PRODUCT_KEY = 'ingredient-manager-v1-products';
     const KNOWN_KEY = 'ingredient-manager-v1-known';
+    // 辨識出來的待處理清單。屬於本機的工作狀態，不同步，但要撐過關閉分頁。
+    const PHOTO_DRAFT_KEY = 'ingredient-manager-v1-photo-draft';
     // AI 金鑰與同步設定一樣是裝置本機資料，絕不可放進同步內容（Gist 並非私密）。
     const AI_KEY = 'ingredient-manager-v1-ai';
     // 模型會隨時間汰換，舊模型會失去免費層配額並以 429 回絕（quota_value: 0）。
@@ -408,7 +423,7 @@
     let settings = loadSettings();
     let syncState = loadSyncState();
     let aiState = loadAiState();
-    let photoItems = [];
+    let photoItems = readList(PHOTO_DRAFT_KEY);
     let applyingRemote = false;
     let syncing = false;
     let pendingRemote = null;
@@ -426,6 +441,7 @@
     function loadProducts() { return readList(PRODUCT_KEY); }
     function saveProductsQuiet(products) { localStorage.setItem(PRODUCT_KEY, JSON.stringify(products)); }
     function loadKnown() { return readList(KNOWN_KEY); }
+    function savePhotoDraft() { localStorage.setItem(PHOTO_DRAFT_KEY, JSON.stringify(photoItems)); }
     function saveKnownQuiet(known) { localStorage.setItem(KNOWN_KEY, JSON.stringify(known)); }
     function loadSettings() {
       let stored = null;
@@ -601,7 +617,7 @@
       const list = $('photoList');
       if (!photoItems.length) { list.innerHTML = ''; return; }
       const remaining = photoItems.filter(entry => !entry.added).length;
-      list.innerHTML = `<p class="scan-hint">辨識到 ${photoItems.length} 項食材，還有 ${remaining} 項待加入。點一項就會帶入表單，補齊分類、位置與保存期限後儲存。</p>`
+      list.innerHTML = `<p class="scan-hint">辨識到 ${photoItems.length} 項食材，還有 ${remaining} 項待加入。點一項就會帶入表單確認後儲存。這份清單會保留到你清空為止，關掉重開也還在。</p><div class="form-actions"><button class="button secondary wide" id="clearPhotoDraft" type="button">清空這份清單</button></div>`
         + photoItems.map((entry, index) => `<article class="shopping-card${entry.added ? ' is-complete' : ''}"><div class="shopping-main"><b>${escapeHtml(entry.name)}</b><span>${entry.quantity} 件${entry.added ? ' · 已加入庫存' : ''}</span></div><div class="shopping-actions">${entry.added ? '' : `<button class="small-button convert" data-photo-add="${index}" type="button">加入</button>`}</div></article>`).join('');
     }
 
@@ -662,25 +678,58 @@
       return merged ? merged.length : 0;
     }
 
-    // 標記用完時記住這項食材的分類、單位與存放位置，下次新增同名食材直接帶入。
+    // 建立當下到到期日的天數，就是這項食材買進來時的可用保存期。
+    function shelfLifeDays(item) {
+      if (!item.expiryDate || !item.createdAt) return null;
+      const from = new Date(item.createdAt);
+      from.setMinutes(from.getMinutes() - from.getTimezoneOffset());
+      const days = Math.round((new Date(item.expiryDate + 'T00:00:00') - new Date(from.toISOString().slice(0, 10) + 'T00:00:00')) / 86400000);
+      return days > 0 && days <= 3650 ? days : null;
+    }
+    function medianDays(samples) {
+      if (!Array.isArray(samples) || !samples.length) return null;
+      const sorted = [...samples].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+    }
+
+    // 記住這項食材的分類、單位、位置與慣用保存天數，下次新增同名食材直接帶入。
+    // 每次存檔與標記用完都會學，保存天數保留最近 5 筆取中位數，避免單次特例把估計帶偏。
     function rememberIngredient(item) {
       const known = loadKnown();
       const index = known.findIndex(entry => entry.name === item.name);
       const now = new Date().toISOString();
+      const samples = [...(known[index]?.shelfLifeSamples || [])];
+      const days = shelfLifeDays(item);
+      if (days) { samples.push(days); while (samples.length > 5) samples.shift(); }
       const record = {
         name: item.name, category: item.category, unit: item.unit, storageLocation: item.storageLocation,
+        shelfLifeSamples: samples,
         createdAt: known[index]?.createdAt || now, updatedAt: now
       };
       if (index >= 0) known[index] = record; else known.push(record);
       saveKnownQuiet(known);
       markDataChanged();
     }
+    function forgetIngredient(name) {
+      saveKnownQuiet(loadKnown().filter(entry => entry.name !== name));
+      markDataChanged();
+    }
+    // 只補空欄位，不覆寫使用者或辨識結果已經填好的內容。
     function autofillFromKnown() {
+      $('expiryHint').textContent = '';
       const known = loadKnown().find(entry => entry.name === $('name').value.trim());
       if (!known) return;
       if (!$('category').value && known.category) $('category').value = known.category;
       if (!$('unit').value && known.unit) { $('unit').value = known.unit; applyQuantityStep(); }
       if (!$('storageLocation').value && known.storageLocation) $('storageLocation').value = known.storageLocation;
+      if (!$('expiryDate').value) {
+        const days = medianDays(known.shelfLifeSamples);
+        if (days) {
+          $('expiryDate').value = addDays(isoToday(), days);
+          $('expiryHint').textContent = `依過去 ${known.shelfLifeSamples.length} 次紀錄推估約 ${days} 天，請確認是否正確。`;
+        }
+      }
     }
 
     // ---- 料理建議（PRD 10.2）----
@@ -1074,6 +1123,10 @@
       $('foodForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
       $('knownNames').innerHTML = loadKnown().map(entry => `<option value="${escapeHtml(entry.name)}"></option>`).join('');
       applyQuantityStep();
+      // 名稱由條碼、發票或採買清單帶入時不會觸發 change 事件，這裡補一次，
+      // 讓食材記憶對所有輸入方式都能生效。
+      $('expiryHint').textContent = '';
+      if ($('name').value.trim()) autofillFromKnown();
     }
     // 新增頁是四種輸入方式的統一入口（PRD 5.1）。手動與條碼各自是一個面板，
     // 切到其他方式時務必停掉相機。
@@ -1227,7 +1280,15 @@
       $('inventoryDataCount').textContent = `目前共有 ${loadItems().length} 項食材。`;
       $('shoppingDataCount').textContent = `目前共有 ${loadShoppingItems().length} 項採買項目。`;
       $('productDataCount').textContent = `已記住 ${loadProducts().length} 組商品條碼，掃描時自動帶出。`;
-      $('knownDataCount').textContent = `已記住 ${loadKnown().length} 項食材的分類與位置，輸入同名時自動帶入。`;
+      const known = loadKnown();
+      $('knownDataCount').textContent = `已記住 ${known.length} 項食材，輸入同名時自動帶入分類、單位、位置與推估保存期限。`;
+      $('knownList').innerHTML = [...known]
+        .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+        .map(entry => {
+          const days = medianDays(entry.shelfLifeSamples);
+          const label = escapeHtml(entry.name) + (days ? `<small style="opacity:.7"> · 約 ${days} 天</small>` : '');
+          return `<span class="category-chip">${label}<button data-forget-known="${escapeHtml(entry.name)}" type="button" aria-label="忘記 ${escapeHtml(entry.name)}">×</button></span>`;
+        }).join('');
       $('categoryList').innerHTML = settings.categories.map(entry => {
         const name = escapeHtml(entry.name);
         if (entry.name === renamingCategory) return `<span class="category-chip editing"><input id="renameInput" type="text" value="${name}" aria-label="重新命名 ${name}" /><button data-save-rename type="button">儲存</button><button data-cancel-rename type="button">取消</button></span>`;
@@ -1309,6 +1370,11 @@
         settings = { ...settings, theme: themeChoice.dataset.themeChoice };
         saveSettings(); applyTheme(); renderSettings(); return;
       }
+      if (event.target.closest('#clearPhotoDraft')) {
+        photoItems = []; savePhotoDraft(); renderPhotoList(); $('photoError').textContent = ''; return;
+      }
+      const forget = event.target.closest('[data-forget-known]');
+      if (forget) { forgetIngredient(forget.dataset.forgetKnown); renderSettings(); showToast('已從記憶移除'); return; }
       const pickModel = event.target.closest('[data-pick-model]');
       if (pickModel) {
         aiState = { ...aiState, model: pickModel.dataset.pickModel };
@@ -1364,6 +1430,8 @@
       syncReminders();
       // 條碼留在食材紀錄上，之後編輯改名時才能同步修正條碼記錄。
       if (barcode) upsertProduct(barcode, item);
+      // 每次存檔都學，記憶才長得起來；只靠「用完」要等吃完一輪才學得到東西。
+      rememberIngredient(item);
       if (raw.sourceShoppingId) {
         const shoppingItems = loadShoppingItems();
         const shoppingIndex = shoppingItems.findIndex(entry => entry.id === raw.sourceShoppingId);
@@ -1374,6 +1442,7 @@
       // 從發票清單來的，加完回到清單繼續處理剩下的品項。
       if (raw.sourcePhotoIndex !== '' && photoItems[Number(raw.sourcePhotoIndex)]) {
         photoItems[Number(raw.sourcePhotoIndex)].added = true;
+        savePhotoDraft();
         setView('add'); setAddMode('photo');
         return;
       }
@@ -1411,14 +1480,15 @@
       try {
         const result = await recognizePhoto(file);
         photoItems = result.items;
-        if (!photoItems.length) { $('photoError').textContent = '這張照片沒有辨識到食材，換一張更清楚的試試。'; renderPhotoList(); return; }
+        if (!photoItems.length) { $('photoError').textContent = '這張照片沒有辨識到食材，換一張更清楚的試試。'; savePhotoDraft(); renderPhotoList(); return; }
         // 單一食材直接進表單確認；發票這種多筆的才需要工作清單。
         if (result.kind === 'item' && photoItems.length === 1) {
           const entry = photoItems[0];
-          photoItems = [];
+            photoItems = []; savePhotoDraft();
           openAdd(entry, '', { sourceKind: 'photo_ai', notice: entry.expiryDate ? '已從包裝讀出保存期限，請確認是否正確。' : '已從照片帶入資料，保存期限讀不到，請自行填寫。' });
           return;
         }
+        savePhotoDraft();
         renderPhotoList();
       } catch (error) {
         $('photoError').textContent = error.message;
