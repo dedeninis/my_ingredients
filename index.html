@@ -860,8 +860,12 @@
           <div class="expiry normal" style="text-align:left;margin-bottom:14px">${formatDate(entry.date)}</div>
           <div class="section-head" style="margin-top:18px"><h2>用了哪些食材</h2></div>
           <div class="category-list">${itemsHtml}</div>
-          <div class="form-actions" style="margin-top:20px"><button class="button secondary wide" data-edit-log="${entry.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
+          <div class="form-actions" style="margin-top:20px"><button class="button wide" id="logShareButton" data-share-log="${entry.id}" type="button" hidden>📤 分享</button></div>
+          <div class="form-actions"><button class="button secondary wide" data-edit-log="${entry.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
         </article>`;
+      // navigator.share 不是所有瀏覽器都有（Firefox 目前預設關閉），偵測不到就整顆按鈕不顯示，
+      // 不要顯示一顆按下去必定失敗的按鈕。
+      if (typeof navigator.share === 'function') $('logShareButton').hidden = false;
       if (entry.photoId) {
         getPhotoBlob(entry.photoId).then(blob => {
           if (!blob) return;
@@ -874,6 +878,26 @@
     }
     function openLogDetail(id) { selectedLogId = id; setView('logDetail'); }
 
+    // 交給系統原生的分享選單（LINE、訊息、Email...），照片直接裝置對裝置傳過去，
+    // 不會經過任何伺服器。使用者取消分享會丟 AbortError，那不是錯誤，靜默即可。
+    async function shareLogEntry(id) {
+      const entry = loadLogs().find(log => log.id === id);
+      if (!entry || typeof navigator.share !== 'function') return;
+      const itemsLine = entry.items.length ? `用了：${entry.items.map(item => item.name).join('、')}` : '';
+      const text = [`🍽️ ${entry.dishName}`, formatDate(entry.date), itemsLine].filter(Boolean).join('\n');
+      const shareData = { title: entry.dishName, text };
+      if (entry.photoId) {
+        const blob = await getPhotoBlob(entry.photoId);
+        if (blob) {
+          const file = new File([blob], `${entry.dishName}.jpg`, { type: blob.type || 'image/jpeg' });
+          // 有些瀏覽器支援 share() 但不支援夾帶檔案，先確認可行再放進去，
+          // 不行就退回純文字分享，而不是整個分享都失敗。
+          if (navigator.canShare?.({ files: [file] })) shareData.files = [file];
+        }
+      }
+      try { await navigator.share(shareData); }
+      catch (error) { if (error.name !== 'AbortError') showToast(`分享失敗：${error.message}`); }
+    }
     function askDeleteLog(id) {
       const entry = loadLogs().find(log => log.id === id);
       if (!entry) return;
@@ -1743,6 +1767,7 @@
         return openLogFormFromSuggestion(logFromSuggestion.dataset.logFromSuggestion, usedIds);
       }
       const logDetail = event.target.closest('[data-log-detail]'); if (logDetail) return openLogDetail(logDetail.dataset.logDetail);
+      const shareLog = event.target.closest('[data-share-log]'); if (shareLog) return shareLogEntry(shareLog.dataset.shareLog);
       const editLog = event.target.closest('[data-edit-log]'); if (editLog) return openLogEdit(editLog.dataset.editLog);
       const deleteLog = event.target.closest('[data-delete-log]'); if (deleteLog) return askDeleteLog(deleteLog.dataset.deleteLog);
       if (event.target.closest('[data-go-home]')) return setView('home');
