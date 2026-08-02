@@ -311,6 +311,7 @@
     <section id="suggestionView" class="view" aria-labelledby="suggestionTitle">
       <header class="topbar"><div><p class="eyebrow">依現有庫存</p><h1 id="suggestionTitle">今日料理建議</h1></div><button class="icon-button" data-go-home type="button" aria-label="回首頁">×</button></header>
       <p class="suggestion-note">依冰箱現有食材比對常見家常菜，優先列出能用掉即將到期食材的組合。已過期的食材不會被列入建議。</p>
+      <p class="suggestion-note" id="suggestionAiHint"></p>
       <div id="suggestionList" class="suggestion-list"></div>
     </section>
 
@@ -806,6 +807,8 @@
       { name: '蔬菜烘蛋', needs: ['蔬菜', '蛋類'] },
       { name: '家常炒肉片', needs: ['肉類', '蔬菜'] },
       { name: '海鮮蔬菜湯', needs: ['海鮮', '蔬菜'] },
+      { name: '香煎肉排', needs: ['肉類'] },
+      { name: '清蒸海鮮', needs: ['海鮮'] },
       { name: '什錦炒飯', needs: ['主食', '蛋類'] },
       { name: '清冰箱雜炊', needs: ['主食', '蔬菜', '肉類'] },
       { name: '蔬菜濃湯', needs: ['蔬菜', '乳製品'] },
@@ -825,6 +828,20 @@
       return satisfied ? used : null;
     }
 
+    // 依到期日算出這道菜的優先原因與排序分數，本機規則與 AI 建議共用同一套，
+    // 確保「原因」永遠是根據真實庫存資料算出來的，不是模型自己編的文字。
+    function scoreSuggestion(name, used, tier) {
+      const urgent = used.filter(item => daysUntil(item.expiryDate) <= 3);
+      const soonest = [...used].sort((a, b) => daysUntil(a.expiryDate) - daysUntil(b.expiryDate))[0];
+      const days = soonest ? daysUntil(soonest.expiryDate) : null;
+      const when = days === 0 ? '今天到期' : days === 1 ? '明天到期' : `還有 ${days} 天到期`;
+      return {
+        name, used,
+        reason: urgent.length ? `${soonest.name}${when}，建議優先使用` : null,
+        score: urgent.length * 10 + used.length + tier
+      };
+    }
+
     function buildLocalSuggestions(items) {
       // 已過期的食材不建議拿來料理；先依到期日排序，讓同一個條件有多樣可選時優先用掉最快到期的。
       const usable = items.filter(item => daysUntil(item.expiryDate) >= 0)
@@ -841,24 +858,98 @@
       const seen = new Set();
       return matched
         .filter(entry => !seen.has(entry.name) && seen.add(entry.name))
-        .map(entry => {
-          const urgent = entry.used.filter(item => daysUntil(item.expiryDate) <= 3);
-          const soonest = [...entry.used].sort((a, b) => daysUntil(a.expiryDate) - daysUntil(b.expiryDate))[0];
-          const days = soonest ? daysUntil(soonest.expiryDate) : null;
-          const when = days === 0 ? '今天到期' : days === 1 ? '明天到期' : `還有 ${days} 天到期`;
-          return {
-            name: entry.name,
-            used: entry.used,
-            reason: urgent.length ? `${soonest.name}${when}，建議優先使用` : null,
-            score: urgent.length * 10 + entry.used.length + entry.tier
-          };
-        })
+        .map(entry => scoreSuggestion(entry.name, entry.used, entry.tier))
         .sort((a, b) => b.score - a.score)
         .slice(0, 6);
     }
 
-    // 保持非同步介面，日後改接 AI 服務時呼叫端不必調整。
+    // 本機規則式建議是預設值：離線可用、不外傳資料。只有規則完全比對不出結果、
+    // 且使用者已設定 Gemini 金鑰時，才呼叫 AI 補上建議——多樣食材組合仍優先由規則涵蓋。
+    async function buildAiSuggestions(items) {
+      const usable = items.filter(item => daysUntil(item.expiryDate) >= 0);
+      if (!usable.length || !aiConfigured()) return [];
+      const byName = new Map();
+      usable.forEach(item => { if (!byName.has(item.name)) byName.set(item.name, item); });
+      const candidates = [...byName.values()];
+      const list = candidates.map(item => `${item.name}（${item.category}，${expiryInfo(item).label}）`).join('\n');
+      const prompt = [
+        '以下是使用者冰箱目前可用的食材清單，一般台灣家常菜規則配對不出結果，請你提出最多 3 道可行的台灣家常料理建議。',
+        '規則：',
+        '1. 只能使用下面清單中的食材，usedNames 裡的每個名稱都必須逐字取自清單，不要引入清單以外的食材、也不要修改寫法。',
+        '2. 每道料理至少用到一項食材，不需要用到全部。',
+        '3. 只需要料理名稱與用到的食材名稱，不要提供作法步驟、調味比例或營養資訊。',
+        '4. 想不出合理料理就回傳空陣列，不要硬湊。',
+        '', '食材清單：', list
+      ].join('\n');
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(aiState.model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': aiState.apiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: { dishes: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
+                name: { type: 'STRING' }, usedNames: { type: 'ARRAY', items: { type: 'STRING' } }
+              }, required: ['name', 'usedNames'] } } },
+              required: ['dishes']
+            }
+          }
+        })
+      });
+      if (!response.ok) throw new Error(await describeGeminiError(response));
+      const payload = await response.json();
+      const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) return [];
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { throw new Error('AI 回傳的格式無法解析'); }
+      const seen = new Set();
+      return (Array.isArray(parsed.dishes) ? parsed.dishes : [])
+        .map(dish => {
+          if (!dish || typeof dish.name !== 'string' || !dish.name.trim()) return null;
+          const name = dish.name.trim();
+          if (seen.has(name)) return null;
+          // 逐一驗證模型指定的食材確實存在於清單裡，任何一項對不上就整道菜捨棄，
+          // 避免顯示「使用了冰箱裡沒有的食材」這種不實資訊。
+          const used = (Array.isArray(dish.usedNames) ? dish.usedNames : []).map(n => byName.get(n)).filter(Boolean);
+          if (!used.length || used.length !== new Set(dish.usedNames).size) return null;
+          seen.add(name);
+          return scoreSuggestion(name, used, 0);
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+    }
+
+    // 依食材與到期日組成的簽章，庫存沒變就不重複呼叫 AI，避免同一頁面被重複開啟時浪費額度。
+    let aiSuggestionCache = null;
+    function inventorySignature(items) { return items.map(item => `${item.id}:${item.expiryDate}`).sort().join('|'); }
+
+    // 保持非同步介面：呼叫端不需要知道結果是本機規則還是 AI 產生的。
     async function getSuggestions() { return buildLocalSuggestions(loadItems()); }
+
+    let suggestionNote = '';
+    // 專供「今日料理建議」頁使用：規則沒有結果時才觸發 AI，並把過程告知使用者。
+    // 首頁摘要刻意不呼叫這個函式，才不會每次開首頁就默默連線出去。
+    async function getPageSuggestions() {
+      const items = loadItems();
+      const local = buildLocalSuggestions(items);
+      if (local.length || !aiConfigured()) { suggestionNote = ''; return local; }
+      const signature = inventorySignature(items);
+      if (!aiSuggestionCache || aiSuggestionCache.signature !== signature) {
+        aiSuggestionCache = { signature, promise: buildAiSuggestions(items) };
+      }
+      try {
+        const aiOnes = await aiSuggestionCache.promise;
+        suggestionNote = aiOnes.length ? '本機規則沒有比對到結果，以上是 Gemini 依現有食材提供的建議（已將食材名稱與到期狀態傳送至 Google）。' : '';
+        return aiOnes;
+      } catch (error) {
+        suggestionNote = `AI 建議暫時無法使用：${error.message}`;
+        aiSuggestionCache = null;
+        return [];
+      }
+    }
 
     // 各平台的搜尋路徑格式不同（YouTube 用查詢參數，Cookpad TW／愛料理用路徑片段），
     // 都已實際打開確認過會出現該料理的搜尋結果，而非只是猜測拼出來的網址。
@@ -876,11 +967,14 @@
 
     function renderSuggestions() {
       const list = $('suggestionList');
+      $('suggestionAiHint').textContent = '';
       list.innerHTML = '<div class="empty-state"><span class="empty-icon">🍳</span><b>整理建議中…</b></div>';
-      getSuggestions().then(suggestions => {
+      getPageSuggestions().then(suggestions => {
+        $('suggestionAiHint').textContent = suggestionNote;
         if (!suggestions.length) {
           const hasUsable = loadItems().some(item => daysUntil(item.expiryDate) >= 0);
-          list.innerHTML = `<div class="empty-state"><span class="empty-icon">${hasUsable ? '🤔' : '📦'}</span><b>${hasUsable ? '目前的食材組合還沒有對應建議' : '冰箱裡還沒有可用食材'}</b><p>${hasUsable ? '再新增幾樣常見食材，這裡就會出現搭配。' : '先新增食材，這裡就會依庫存給建議。'}</p></div>`;
+          const aiHintExtra = !suggestionNote && hasUsable && !aiConfigured() ? '若設定 Gemini 金鑰，本機規則沒有結果時會嘗試用 AI 提供建議。' : '';
+          list.innerHTML = `<div class="empty-state"><span class="empty-icon">${hasUsable ? '🤔' : '📦'}</span><b>${hasUsable ? '目前的食材組合還沒有對應建議' : '冰箱裡還沒有可用食材'}</b><p>${hasUsable ? '再新增幾樣常見食材，這裡就會出現搭配。' : '先新增食材，這裡就會依庫存給建議。'}${aiHintExtra}</p></div>`;
           return;
         }
         list.innerHTML = suggestions.map(entry => `<article class="suggestion-card"><div class="suggestion-title"><h3>${escapeHtml(entry.name)}</h3>${recipeSearchLinks(entry.name)}</div><div class="used">可使用：${entry.used.map(item => `${emojiFor(item.category)} ${escapeHtml(item.name)}`).join('、')}</div>${entry.reason ? `<div class="reason"><span aria-hidden="true">⚠️</span><span>${escapeHtml(entry.reason)}</span></div>` : ''}</article>`).join('');
