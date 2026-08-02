@@ -103,6 +103,13 @@
     .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; }
     .text-button { padding: 0; border: 0; background: transparent; color: var(--leaf); font-weight: 700; }
     .notice { border: 1px solid var(--sun-line); background: var(--sun-soft); border-radius: 16px; overflow: hidden; }
+    /* 有食材即將到期時緩慢脈動，提醒但不干擾；動暈敏感的使用者由下方媒體查詢關閉。 */
+    .notice.urgent { animation: notice-breathe 2.8s ease-in-out infinite; }
+    @keyframes notice-breathe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(240, 168, 58, .35); }
+      50% { box-shadow: 0 0 0 7px rgba(240, 168, 58, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .notice.urgent { animation: none; } }
     .notice.empty { border-color: var(--line); background: var(--surface); }
     .notice-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border: 0; border-bottom: 1px solid rgba(149, 120, 55, .16); background: transparent; color: inherit; text-align: left; }
     .notice-item:last-child { border-bottom: 0; }
@@ -189,7 +196,11 @@
     .suggestion-entry small { display: block; margin-top: 4px; color: var(--muted); font-size: .84rem; }
     .suggestion-list { display: grid; gap: 10px; }
     .suggestion-card { padding: 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 2px 8px rgba(38,61,48,.025); }
-    .suggestion-card h3 { margin: 0 0 7px; font-size: 1.04rem; letter-spacing: -.02em; }
+    .suggestion-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+    .suggestion-card h3 { margin: 0; font-size: 1.04rem; letter-spacing: -.02em; }
+    .suggestion-search { display: flex; gap: 4px; flex: 0 0 auto; }
+    .suggestion-search a { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 9px; background: var(--meta-bg); font-size: .94rem; text-decoration: none; }
+    .suggestion-search a:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
     .suggestion-card .used { color: var(--muted); font-size: .86rem; line-height: 1.6; }
     .suggestion-card .reason { display: flex; gap: 7px; margin-top: 10px; padding: 9px 11px; border-radius: 11px; background: var(--sun-soft); color: var(--warn-ink); font-size: .84rem; line-height: 1.5; }
     .suggestion-note { margin: 0 0 14px; color: var(--muted); font-size: .86rem; line-height: 1.6; }
@@ -410,7 +421,8 @@
       { name: '肉類', emoji: '🥩' }, { name: '蔬菜', emoji: '🥬' }, { name: '水果', emoji: '🍎' },
       { name: '乳製品', emoji: '🥛' }, { name: '蛋類', emoji: '🥚' }, { name: '海鮮', emoji: '🐟' },
       { name: '冷凍食品', emoji: '🍱' }, { name: '主食', emoji: '🍚' }, { name: '調味料', emoji: '🧂' },
-      { name: '罐頭／乾貨', emoji: '🥫' }, { name: '其他', emoji: '🥗' }
+      { name: '罐頭／乾貨', emoji: '🥫' }, { name: '酒類', emoji: '🍶' }, { name: '軟性飲料', emoji: '🥤' },
+      { name: '其他', emoji: '🥗' }
     ];
     const units = ['包', '盒', '瓶', '顆', '把', '份', '公斤', '公克', '毫升', '罐'];
     // 數量輸入框的級距依單位而定：公斤常見 0.5、1.2 這種值；公克與毫升是整數為主。
@@ -452,11 +464,16 @@
         ? stored.categories.filter(entry => entry && typeof entry.name === 'string' && entry.name.trim())
           .map(entry => ({ name: entry.name, emoji: entry.emoji || '🥗', custom: !!entry.custom }))
         : [];
+      // 既有裝置已存過設定時，新加入的預設類型（如酒類、軟性飲料）不會自動出現在其清單裡；
+      // 用名稱比對補上缺的，不影響使用者已做的改名、刪除或自訂類型。
+      const categories = saved.length
+        ? [...saved, ...DEFAULT_CATEGORIES.filter(entry => !saved.some(s => s.name === entry.name)).map(entry => ({ ...entry, custom: false }))]
+        : DEFAULT_CATEGORIES.map(entry => ({ ...entry, custom: false }));
       return {
         remindersEnabled: stored?.remindersEnabled !== false,
         theme: ['system', 'light', 'dark'].includes(stored?.theme) ? stored.theme : 'system',
         fridgeName: typeof stored?.fridgeName === 'string' && stored.fridgeName.trim() ? stored.fridgeName.trim() : DEFAULT_FRIDGE_NAME,
-        categories: saved.length ? saved : DEFAULT_CATEGORIES.map(entry => ({ ...entry, custom: false }))
+        categories
       };
     }
     // 深淺色一律解析成明確的 light / dark 再寫到 data-theme，
@@ -842,6 +859,20 @@
     // 保持非同步介面，日後改接 AI 服務時呼叫端不必調整。
     async function getSuggestions() { return buildLocalSuggestions(loadItems()); }
 
+    // 各平台的搜尋路徑格式不同（YouTube 用查詢參數，Cookpad TW／愛料理用路徑片段），
+    // 都已實際打開確認過會出現該料理的搜尋結果，而非只是猜測拼出來的網址。
+    function recipeSearchLinks(dishName) {
+      const encoded = encodeURIComponent(dishName);
+      const targets = [
+        { key: 'youtube', label: 'YouTube', emoji: '▶️', url: `https://www.youtube.com/results?search_query=${encoded}+食譜` },
+        { key: 'cookpad', label: 'Cookpad', emoji: '🍳', url: `https://cookpad.com/tw/搜尋/${encoded}` },
+        { key: 'icook', label: '愛料理', emoji: '🍚', url: `https://icook.tw/search/${encoded}` }
+      ];
+      return `<div class="suggestion-search">${targets.map(t =>
+        `<a href="${t.url}" target="_blank" rel="noopener" aria-label="到 ${t.label} 搜尋「${escapeHtml(dishName)}」的做法" title="${t.label}">${t.emoji}</a>`
+      ).join('')}</div>`;
+    }
+
     function renderSuggestions() {
       const list = $('suggestionList');
       list.innerHTML = '<div class="empty-state"><span class="empty-icon">🍳</span><b>整理建議中…</b></div>';
@@ -851,7 +882,7 @@
           list.innerHTML = `<div class="empty-state"><span class="empty-icon">${hasUsable ? '🤔' : '📦'}</span><b>${hasUsable ? '目前的食材組合還沒有對應建議' : '冰箱裡還沒有可用食材'}</b><p>${hasUsable ? '再新增幾樣常見食材，這裡就會出現搭配。' : '先新增食材，這裡就會依庫存給建議。'}</p></div>`;
           return;
         }
-        list.innerHTML = suggestions.map(entry => `<article class="suggestion-card"><h3>${escapeHtml(entry.name)}</h3><div class="used">可使用：${entry.used.map(item => `${emojiFor(item.category)} ${escapeHtml(item.name)}`).join('、')}</div>${entry.reason ? `<div class="reason"><span aria-hidden="true">⚠️</span><span>${escapeHtml(entry.reason)}</span></div>` : ''}</article>`).join('');
+        list.innerHTML = suggestions.map(entry => `<article class="suggestion-card"><div class="suggestion-title"><h3>${escapeHtml(entry.name)}</h3>${recipeSearchLinks(entry.name)}</div><div class="used">可使用：${entry.used.map(item => `${emojiFor(item.category)} ${escapeHtml(item.name)}`).join('、')}</div>${entry.reason ? `<div class="reason"><span aria-hidden="true">⚠️</span><span>${escapeHtml(entry.reason)}</span></div>` : ''}</article>`).join('');
       });
     }
 
@@ -1086,7 +1117,7 @@
       });
       const container = $('expiryNotice');
       if (!expiring.length) { container.className = 'notice empty'; container.innerHTML = '<div class="notice-item"><div class="notice-icon">✨</div><div class="notice-main"><b>目前沒有即將到期食材</b><span>新增食材後，這裡會協助提醒你。</span></div></div>'; return; }
-      container.className = 'notice';
+      container.className = 'notice urgent';
       container.innerHTML = expiring.slice(0, 3).map(item => { const info = expiryInfo(item); return `<button class="notice-item" data-detail="${item.id}" type="button"><div class="notice-icon">${emojiFor(item.category)}</div><div class="notice-main"><b>${escapeHtml(item.name)}</b><span>${info.label}</span></div><span class="chevron">›</span></button>`; }).join('');
     }
 
