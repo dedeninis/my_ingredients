@@ -288,8 +288,9 @@
       </div>
       <div id="photoPanel" hidden>
         <p class="scan-hint">可以拍<b>單一食材或包裝</b>，也可以拍<b>整張購物發票</b>，系統會自行判斷。拍包裝時會試著讀出上面的有效期限。<br /><b>照片會傳送到 Google Gemini 辨識</b>，辨識完不會保存照片。</p>
-        <input id="photoFile" type="file" accept="image/*" capture="environment" hidden />
-        <div class="form-actions"><button class="button wide" id="photoPickButton" type="button">📷 拍攝或選擇照片</button></div>
+        <input id="photoFileCamera" type="file" accept="image/*" capture="environment" hidden />
+        <input id="photoFileGallery" type="file" accept="image/*" hidden />
+        <div class="form-actions"><button class="button wide" id="photoCameraButton" type="button">📷 拍照</button><button class="button secondary wide" id="photoGalleryButton" type="button">🖼 從相簿選</button></div>
         <p class="field-error" id="photoError"></p>
         <div id="photoList" class="suggestion-list"></div>
       </div>
@@ -374,9 +375,10 @@
           <span class="field-error" id="logItemsError"></span>
         </div>
         <div class="field full">
-          <label for="logPhotoPickButton">照片（選填）</label>
-          <input id="logPhotoFile" type="file" accept="image/*" capture="environment" hidden />
-          <div class="form-actions"><button class="button secondary wide" id="logPhotoPickButton" type="button">📷 拍攝或選擇照片</button></div>
+          <label id="logPhotoLabel">照片（選填）</label>
+          <input id="logPhotoFileCamera" type="file" accept="image/*" capture="environment" hidden />
+          <input id="logPhotoFileGallery" type="file" accept="image/*" hidden />
+          <div class="form-actions"><button class="button wide" id="logPhotoCameraButton" type="button">📷 拍照</button><button class="button secondary wide" id="logPhotoGalleryButton" type="button">🖼 從相簿選</button></div>
           <div id="logPhotoPreview" class="log-photo-preview"></div>
         </div>
         <div class="form-actions"><button class="button secondary wide" id="cancelLogForm" type="button">取消</button><button class="button wide" type="submit" id="saveLogButton">儲存日誌</button></div>
@@ -1882,8 +1884,11 @@
     });
     $('cancelShoppingForm').addEventListener('click', () => prepareShoppingForm());
 
-    $('logPhotoPickButton').addEventListener('click', () => $('logPhotoFile').click());
-    $('logPhotoFile').addEventListener('change', async event => {
+    // capture="environment" 是否強制直接開相機、還是退回一般選擇視窗，各瀏覽器解讀不一致
+    // （MDN 標記為非 Baseline 功能），拆成拍照／相簿兩顆按鈕才能穩定拿到明確的行為。
+    $('logPhotoCameraButton').addEventListener('click', () => $('logPhotoFileCamera').click());
+    $('logPhotoGalleryButton').addEventListener('click', () => $('logPhotoFileGallery').click());
+    async function handleLogPhotoChange(event) {
       const file = event.target.files?.[0];
       event.target.value = '';
       if (!file) return;
@@ -1891,7 +1896,9 @@
       const dataUrl = 'data:image/jpeg;base64,' + await downscaleImage(file, 1400, 0.85);
       logPhotoFile = await (await fetch(dataUrl)).blob();
       $('logPhotoPreview').innerHTML = `<img src="${dataUrl}" alt="" />`;
-    });
+    }
+    $('logPhotoFileCamera').addEventListener('change', handleLogPhotoChange);
+    $('logPhotoFileGallery').addEventListener('change', handleLogPhotoChange);
     $('cancelLogForm').addEventListener('click', () => {
       // 編輯中取消回到那篇日誌的詳細頁比回清單更順手，selectedLogId 已經是這篇了。
       setView($('logEditingId').value ? 'logDetail' : 'log');
@@ -1973,13 +1980,16 @@
         button.disabled = false; button.textContent = editingId ? '更新日誌' : '儲存日誌';
       }
     });
-    $('photoPickButton').addEventListener('click', () => $('photoFile').click());
-    $('photoFile').addEventListener('change', async event => {
+    $('photoCameraButton').addEventListener('click', () => $('photoFileCamera').click());
+    $('photoGalleryButton').addEventListener('click', () => $('photoFileGallery').click());
+    async function handlePhotoChange(event) {
       const file = event.target.files?.[0];
       event.target.value = '';
       if (!file) return;
-      const button = $('photoPickButton');
-      button.disabled = true; button.textContent = '辨識中…';
+      const cameraButton = $('photoCameraButton'), galleryButton = $('photoGalleryButton');
+      cameraButton.disabled = true; galleryButton.disabled = true;
+      const originalCameraLabel = cameraButton.textContent;
+      cameraButton.textContent = '辨識中…';
       $('photoError').textContent = '';
       try {
         const result = await recognizePhoto(file);
@@ -1998,9 +2008,11 @@
         $('photoError').textContent = error.message;
         photoItems = []; renderPhotoList();
       } finally {
-        button.disabled = false; button.textContent = '📷 拍攝或選擇照片';
+        cameraButton.disabled = false; galleryButton.disabled = false; cameraButton.textContent = originalCameraLabel;
       }
-    });
+    }
+    $('photoFileCamera').addEventListener('change', handlePhotoChange);
+    $('photoFileGallery').addEventListener('change', handlePhotoChange);
     $('barcodeForm').addEventListener('submit', event => {
       event.preventDefault();
       $('manualBarcodeError').textContent = '';
