@@ -292,7 +292,7 @@
         <h2>發票辨識（Google Gemini）</h2>
         <div class="form-grid">
           <div class="field full"><label for="aiApiKey">API 金鑰</label><input id="aiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="貼上 Gemini API 金鑰" /></div>
-          <div class="field full"><label for="aiModel">模型</label><input id="aiModel" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-2.0-flash" /></div>
+          <div class="field full"><label for="aiModel">模型</label><input id="aiModel" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.5-flash" /></div>
         </div>
         <div class="form-actions"><button class="button secondary wide" id="clearAiButton" type="button">清除設定</button><button class="button wide" id="saveAiButton" type="button">儲存</button></div>
         <div class="form-actions"><button class="button secondary wide" id="testAiButton" type="button">測試連線並列出可用模型</button></div>
@@ -331,7 +331,9 @@
     const PRODUCT_KEY = 'ingredient-manager-v1-products';
     // AI 金鑰與同步設定一樣是裝置本機資料，絕不可放進同步內容（Gist 並非私密）。
     const AI_KEY = 'ingredient-manager-v1-ai';
-    const DEFAULT_AI_MODEL = 'gemini-2.0-flash';
+    // 模型會隨時間汰換，舊模型會失去免費層配額並以 429 回絕（quota_value: 0）。
+    // 設定頁的「測試連線」可列出這把金鑰當下真正能用的模型。
+    const DEFAULT_AI_MODEL = 'gemini-3.5-flash';
     // 同步設定含存取權杖，只留在這台裝置，永遠不會被寫進同步內容。
     const SYNC_KEY = 'ingredient-manager-v1-sync';
     const GIST_FILENAME = 'my-ingredients.json';
@@ -399,9 +401,12 @@
     function loadAiState() {
       let stored = {};
       try { stored = JSON.parse(localStorage.getItem(AI_KEY)) || {}; } catch { stored = {}; }
+      const model = typeof stored.model === 'string' && stored.model.trim() ? stored.model.trim() : DEFAULT_AI_MODEL;
       return {
         apiKey: typeof stored.apiKey === 'string' ? stored.apiKey : '',
-        model: typeof stored.model === 'string' && stored.model.trim() ? stored.model.trim() : DEFAULT_AI_MODEL
+        // 已存起來的舊模型不會因為改預設值而更新，且舊世代早已沒有免費層配額，
+        // 使用者只會拿到看似「用超量」的 429，所以在這裡直接升級。
+        model: /^gemini-[12]\./.test(model) ? DEFAULT_AI_MODEL : model
       };
     }
     function saveAiState() { localStorage.setItem(AI_KEY, JSON.stringify(aiState)); }
