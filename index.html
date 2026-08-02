@@ -883,9 +883,9 @@
     async function shareLogEntry(id) {
       const entry = loadLogs().find(log => log.id === id);
       if (!entry || typeof navigator.share !== 'function') return;
-      const itemsLine = entry.items.length ? `用了：${entry.items.map(item => item.name).join('、')}` : '';
-      const text = [`🍽️ ${entry.dishName}`, formatDate(entry.date), itemsLine].filter(Boolean).join('\n');
-      const shareData = { title: entry.dishName, text };
+      // title 跟 text 在不同接收 App（LINE、訊息、Instagram）上顯示與否不一致，
+      // 兩者都填料理名稱才能確保名稱在各種 App 上都看得到；只分享照片與名稱，不附日期與食材列表。
+      const shareData = { title: entry.dishName, text: entry.dishName };
       if (entry.photoId) {
         const blob = await getPhotoBlob(entry.photoId);
         if (blob) {
