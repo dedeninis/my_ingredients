@@ -226,8 +226,11 @@
     .log-card .log-info span { display: block; margin-top: 3px; color: var(--muted); font-size: .78rem; }
     .log-item-picker { display: grid; gap: 8px; margin-top: 7px; max-height: 260px; overflow-y: auto; }
     .log-item-row { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-    .log-item-row input { width: 20px; height: 20px; accent-color: var(--leaf); }
-    .log-item-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-item-row input[type="checkbox"] { flex: 0 0 auto; width: 20px; height: 20px; accent-color: var(--leaf); }
+    .log-item-row label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-item-row .log-item-qty { flex: 0 0 auto; width: 66px; height: 36px; padding: 0 8px; border: 1px solid var(--field-line); border-radius: 9px; background: var(--field); color: var(--ink); text-align: right; }
+    .log-item-row .log-item-qty:disabled { opacity: .4; }
+    .log-item-row .log-item-unit { flex: 0 0 auto; color: var(--muted); font-size: .82rem; }
     .log-photo-preview { margin-top: 10px; }
     .log-photo-preview img { display: block; width: 100%; max-height: 220px; border-radius: 14px; object-fit: cover; }
     .log-detail-photo { width: 100%; max-height: 320px; border-radius: 18px; object-fit: cover; margin-bottom: 14px; }
@@ -354,13 +357,19 @@
     <section id="logFormView" class="view" aria-labelledby="logFormTitle">
       <header class="topbar"><div><p class="eyebrow">記錄這一餐</p><h1 id="logFormTitle">新增日誌</h1></div><button class="icon-button" data-nav-to="log" type="button" aria-label="回日誌">×</button></header>
       <form id="logForm" class="form-card" novalidate>
-        <p>選擇用掉的食材後儲存，這些食材會從庫存移除並記住其分類與保存天數。</p>
+        <p id="logFormHint">選擇用掉的食材與用量後儲存，這些食材會從庫存扣除並記住其分類與保存天數。</p>
+        <input id="logEditingId" name="logEditingId" type="hidden" />
         <div class="form-grid">
           <div class="field full"><label for="logDate">日期</label><input id="logDate" name="logDate" type="date" required /><span class="field-error" id="logDateError"></span></div>
           <div class="field full"><label for="logDishName">料理名稱</label><input id="logDishName" name="logDishName" placeholder="例如：番茄炒蛋" required /><span class="field-error" id="logDishNameError"></span></div>
         </div>
+        <div class="field full" id="logExistingItemsField" hidden>
+          <label>已記錄的食材</label>
+          <p class="scan-hint">這些食材已經從庫存扣除，這裡無法移除；如果記錯了，可以到日誌詳細頁整篇刪除再重寫。</p>
+          <div id="logExistingItems" class="category-list"></div>
+        </div>
         <div class="field full">
-          <label>用了哪些食材</label>
+          <label id="logItemPickerLabel">用了哪些食材</label>
           <div id="logItemPicker" class="log-item-picker"></div>
           <span class="field-error" id="logItemsError"></span>
         </div>
@@ -751,30 +760,69 @@
 
     // 目前選好要存進日誌的照片，還沒送出表單前先留在記憶體。
     let logPhotoFile = null;
+    // 編輯既有日誌時，使用者若沒選新照片就要保留這張；選了新的才連舊檔一併換掉。
+    let logExistingPhotoId = null;
     let logObjectUrls = [];
     // <img> 用的 object URL 要主動釋放，否則每次重新渲染清單都會多洩漏一個。
     function revokeLogObjectUrls() { logObjectUrls.forEach(url => URL.revokeObjectURL(url)); logObjectUrls = []; }
 
     // prefill 讓料理建議卡片可以帶著菜名與已知食材直接開表單；欄位仍是一般表單欄位，
     // 使用者存檔前都能自由修改，不會因為從建議帶入就少了編輯彈性。
-    function prepareLogForm(prefill = {}) {
+    // 食材列每項配一個「用了多少」欄位，預設帶入該食材目前的全部庫存量，可以改小。
+    // 用量等於庫存量就整列移除，小於庫存量就扣減，不再是勾了就整批清空。
+    function logItemRowHtml(item, checked) {
+      return `<div class="log-item-row"><input type="checkbox" id="logItemCb-${item.id}" name="logItem" value="${item.id}"${checked ? ' checked' : ''} /><label for="logItemCb-${item.id}">${emojiFor(item.category)} ${escapeHtml(item.name)}｜庫存 ${item.quantity}</label><input type="number" class="log-item-qty" data-item-id="${item.id}" min="0.01" max="${item.quantity}" step="any" value="${item.quantity}"${checked ? '' : ' disabled'} aria-label="用了多少${escapeHtml(item.name)}" /><span class="log-item-unit">${escapeHtml(item.unit)}</span></div>`;
+    }
+    // options: { dishName, itemIds } 從建議卡片預填；{ editingEntry } 編輯既有日誌，兩者互斥。
+    function prepareLogForm(options = {}) {
       $('logForm').reset();
-      $('logDate').value = isoToday();
-      $('logDishName').value = prefill.dishName || '';
+      const editing = options.editingEntry || null;
+      $('logEditingId').value = editing ? editing.id : '';
+      $('logDate').value = editing ? editing.date : isoToday();
+      $('logDishName').value = editing ? editing.dishName : (options.dishName || '');
       logPhotoFile = null;
+      logExistingPhotoId = editing ? (editing.photoId || null) : null;
       $('logPhotoPreview').innerHTML = '';
       $('logForm').querySelectorAll('.field-error').forEach(el => el.textContent = '');
+      $('logFormTitle').textContent = editing ? '編輯日誌' : '新增日誌';
+      $('saveLogButton').textContent = editing ? '更新日誌' : '儲存日誌';
+      $('logFormHint').textContent = editing
+        ? '可修改日期、名稱與照片；下面只用來追加還沒記錄過的食材，已記錄的食材無法在此移除。'
+        : '選擇用掉的食材與用量後儲存，這些食材會從庫存扣除並記住其分類與保存天數。';
+      $('logItemPickerLabel').textContent = editing ? '追加食材（選填）' : '用了哪些食材';
+
+      $('logExistingItemsField').hidden = !editing;
+      if (editing) {
+        $('logExistingItems').innerHTML = editing.items.length
+          ? editing.items.map(item => `<span class="category-chip">${emojiFor(item.category)} ${escapeHtml(item.name)}${item.quantity ? `｜${item.quantity} ${escapeHtml(item.unit || '')}` : ''}</span>`).join('')
+          : '<span class="scan-hint">這篇日誌沒有記錄任何食材。</span>';
+      }
+
+      if (editing && editing.photoId) {
+        getPhotoBlob(editing.photoId).then(blob => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          logObjectUrls.push(url);
+          $('logPhotoPreview').innerHTML = `<img src="${url}" alt="" />`;
+        });
+      }
+
       const items = sortItems(loadItems());
-      const preselected = new Set(prefill.itemIds || []);
+      const preselected = new Set(options.itemIds || []);
       $('logItemPicker').innerHTML = items.length
-        ? items.map(item => `<label class="log-item-row"><input type="checkbox" name="logItem" value="${item.id}"${preselected.has(item.id) ? ' checked' : ''} /><span>${emojiFor(item.category)} ${escapeHtml(item.name)}｜${item.quantity} ${escapeHtml(item.unit)}</span></label>`).join('')
+        ? items.map(item => logItemRowHtml(item, preselected.has(item.id))).join('')
         : '<p class="scan-hint">目前庫存是空的，沒有食材可以選。</p>';
     }
-    function openLogForm(prefill) { prepareLogForm(prefill); setView('logForm'); }
+    function openLogForm(options) { prepareLogForm(options); setView('logForm'); }
     // 建議卡片是頁面載入當下的快照，開表單前重新核對一次，只預先勾選現在仍在庫存裡的食材。
     function openLogFormFromSuggestion(dishName, usedIds) {
       const currentIds = new Set(loadItems().map(item => item.id));
       openLogForm({ dishName, itemIds: usedIds.filter(id => currentIds.has(id)) });
+    }
+    function openLogEdit(id) {
+      const entry = loadLogs().find(log => log.id === id);
+      if (!entry) return;
+      openLogForm({ editingEntry: entry });
     }
 
     function renderLogList() {
@@ -801,7 +849,7 @@
       if (!entry) { setView('log'); return; }
       $('logDetailTitle').textContent = entry.dishName;
       const itemsHtml = entry.items.length
-        ? entry.items.map(item => `<span class="category-chip">${emojiFor(item.category)} ${escapeHtml(item.name)}</span>`).join('')
+        ? entry.items.map(item => `<span class="category-chip">${emojiFor(item.category)} ${escapeHtml(item.name)}${item.quantity ? `｜${item.quantity} ${escapeHtml(item.unit || '')}` : ''}</span>`).join('')
         : '<span class="field-error"></span>';
       $('logDetailContent').innerHTML = `
         <article class="detail-panel">
@@ -810,7 +858,7 @@
           <div class="expiry normal" style="text-align:left;margin-bottom:14px">${formatDate(entry.date)}</div>
           <div class="section-head" style="margin-top:18px"><h2>用了哪些食材</h2></div>
           <div class="category-list">${itemsHtml}</div>
-          <div class="form-actions" style="margin-top:20px"><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
+          <div class="form-actions" style="margin-top:20px"><button class="button secondary wide" data-edit-log="${entry.id}" type="button">✏️ 編輯</button><button class="button danger wide" data-delete-log="${entry.id}" type="button">刪除這篇日誌</button></div>
         </article>`;
       if (entry.photoId) {
         getPhotoBlob(entry.photoId).then(blob => {
@@ -1693,6 +1741,7 @@
         return openLogFormFromSuggestion(logFromSuggestion.dataset.logFromSuggestion, usedIds);
       }
       const logDetail = event.target.closest('[data-log-detail]'); if (logDetail) return openLogDetail(logDetail.dataset.logDetail);
+      const editLog = event.target.closest('[data-edit-log]'); if (editLog) return openLogEdit(editLog.dataset.editLog);
       const deleteLog = event.target.closest('[data-delete-log]'); if (deleteLog) return askDeleteLog(deleteLog.dataset.deleteLog);
       if (event.target.closest('[data-go-home]')) return setView('home');
       const navTo = event.target.closest('[data-nav-to]'); if (navTo) return setView(navTo.dataset.navTo);
@@ -1843,39 +1892,85 @@
       logPhotoFile = await (await fetch(dataUrl)).blob();
       $('logPhotoPreview').innerHTML = `<img src="${dataUrl}" alt="" />`;
     });
-    $('cancelLogForm').addEventListener('click', () => setView('log'));
+    $('cancelLogForm').addEventListener('click', () => {
+      // 編輯中取消回到那篇日誌的詳細頁比回清單更順手，selectedLogId 已經是這篇了。
+      setView($('logEditingId').value ? 'logDetail' : 'log');
+    });
+    // 用量欄位只有在該項被勾選時才有意義：勾選就啟用並帶回目前庫存量，取消就停用。
+    $('logItemPicker').addEventListener('change', event => {
+      const cb = event.target.closest('input[name="logItem"]');
+      if (!cb) return;
+      const qty = $('logItemPicker').querySelector(`.log-item-qty[data-item-id="${cb.value}"]`);
+      if (!qty) return;
+      qty.disabled = !cb.checked;
+      if (cb.checked) qty.value = qty.max;
+    });
+    // 依用量扣庫存：用量等於庫存全部就整列移除，小於庫存量就扣減保留剩餘。
+    // 不論全部或部分用掉，都餵一次食材記憶——保存天數學的是「這項食材買回來能放多久」，跟這次用掉多少無關。
+    function consumeLogItems(checkedIds) {
+      const allItems = loadItems();
+      const snapshots = [];
+      let changed = false;
+      const remaining = allItems.filter(item => {
+        if (!checkedIds.includes(item.id)) return true;
+        const qtyInput = $('logItemPicker').querySelector(`.log-item-qty[data-item-id="${item.id}"]`);
+        const used = Math.min(Math.max(Number(qtyInput?.value) || 0, 0.01), item.quantity);
+        snapshots.push({ name: item.name, category: item.category, quantity: used, unit: item.unit });
+        rememberIngredient(item);
+        changed = true;
+        if (used >= item.quantity - 1e-9) return false; // 全部用完，整列移除
+        item.quantity = Math.round((item.quantity - used) * 100) / 100;
+        item.updatedAt = new Date().toISOString();
+        return true;
+      });
+      if (changed) saveItems(remaining);
+      return snapshots;
+    }
     $('logForm').addEventListener('submit', async event => {
       event.preventDefault();
       const raw = Object.fromEntries(new FormData(event.currentTarget));
+      const editingId = raw.logEditingId || '';
       $('logDateError').textContent = ''; $('logDishNameError').textContent = ''; $('logItemsError').textContent = '';
       let valid = true;
       if (!raw.logDate) { $('logDateError').textContent = '請選擇日期'; valid = false; }
       if (!raw.logDishName?.trim()) { $('logDishNameError').textContent = '請輸入料理名稱'; valid = false; }
       const checkedIds = [...$('logItemPicker').querySelectorAll('input[name="logItem"]:checked')].map(el => el.value);
-      if (!checkedIds.length) { $('logItemsError').textContent = '請至少選一項用掉的食材'; valid = false; }
+      // 新增時至少要選一項，編輯時可以只是改個日期或照片，不要求一定要追加食材。
+      if (!editingId && !checkedIds.length) { $('logItemsError').textContent = '請至少選一項用掉的食材'; valid = false; }
       if (!valid) return;
 
       const button = $('saveLogButton');
-      button.disabled = true; button.textContent = '儲存中…';
+      button.disabled = true; button.textContent = editingId ? '更新中…' : '儲存中…';
       try {
-        const allItems = loadItems();
-        const used = allItems.filter(item => checkedIds.includes(item.id));
-        const photoId = logPhotoFile ? await savePhotoBlob(logPhotoFile) : null;
-        const entry = {
-          id: crypto.randomUUID(), date: raw.logDate, dishName: raw.logDishName.trim(),
-          items: used.map(item => ({ name: item.name, category: item.category })),
-          photoId, createdAt: new Date().toISOString()
-        };
-        saveLogsQuiet([...loadLogs(), entry]);
-        markDataChanged();
-        // 這道菜同時用掉了好幾樣食材：逐一移出庫存並餵進食材記憶，等同對每一項各按一次「用完了」。
-        used.forEach(item => rememberIngredient(item));
-        saveItems(allItems.filter(item => !checkedIds.includes(item.id)));
-        syncReminders();
-        showToast('已儲存日誌');
-        setView('log');
+        let photoId = logExistingPhotoId;
+        if (logPhotoFile) {
+          if (logExistingPhotoId) await deletePhotoBlob(logExistingPhotoId);
+          photoId = await savePhotoBlob(logPhotoFile);
+        }
+        const newSnapshots = consumeLogItems(checkedIds);
+
+        if (editingId) {
+          const logs = loadLogs();
+          const index = logs.findIndex(log => log.id === editingId);
+          if (index < 0) throw new Error('找不到這篇日誌，可能已被刪除。');
+          logs[index] = { ...logs[index], date: raw.logDate, dishName: raw.logDishName.trim(),
+            items: [...logs[index].items, ...newSnapshots], photoId };
+          saveLogsQuiet(logs);
+          markDataChanged();
+          syncReminders();
+          showToast('已更新日誌');
+          selectedLogId = editingId;
+          setView('logDetail');
+        } else {
+          const entry = { id: crypto.randomUUID(), date: raw.logDate, dishName: raw.logDishName.trim(), items: newSnapshots, photoId, createdAt: new Date().toISOString() };
+          saveLogsQuiet([...loadLogs(), entry]);
+          markDataChanged();
+          syncReminders();
+          showToast('已儲存日誌');
+          setView('log');
+        }
       } finally {
-        button.disabled = false; button.textContent = '儲存日誌';
+        button.disabled = false; button.textContent = editingId ? '更新日誌' : '儲存日誌';
       }
     });
     $('photoPickButton').addEventListener('click', () => $('photoFile').click());

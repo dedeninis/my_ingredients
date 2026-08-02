@@ -1,6 +1,6 @@
 // Service worker：讓 App 在沒有網路時仍可開啟（PRD 12 離線能力）。
 // 改動 index.html 之後要把 CACHE 版本號往上加，使用者才會拿到新版。
-const CACHE = 'ingredient-manager-v19';
+const CACHE = 'ingredient-manager-v20';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
