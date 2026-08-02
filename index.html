@@ -75,7 +75,7 @@
     .quick-action .action-icon { flex: 0 0 auto; font-size: 1.25rem; }
     .quick-action .action-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bottom-nav { position: fixed; z-index: 4; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: 10px max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.94); backdrop-filter: blur(12px); }
-    .nav-inner { display: grid; grid-template-columns: repeat(4, minmax(70px, 1fr)); width: min(720px, 100%); }
+    .nav-inner { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: min(720px, 100%); }
     .nav-button { padding: 6px 2px; border: 0; background: transparent; color: var(--muted); font-size: .76rem; }
     .nav-button span { display: block; margin-bottom: 3px; font-size: 1.15rem; }
     .nav-button.active { color: var(--leaf); font-weight: 800; }
@@ -182,7 +182,6 @@
     <section id="homeView" class="view active" aria-labelledby="homeTitle">
       <header class="topbar">
         <div><p class="eyebrow" id="todayLabel"></p><h1 id="homeTitle">我的冰箱</h1></div>
-        <button class="icon-button" id="settingsButton" type="button" aria-label="設定">⚙️</button>
       </header>
       <section class="hero" aria-label="冰箱摘要"><div class="hero-row"><div><p>目前冰箱狀態</p><strong id="heroText">還沒有食材</strong></div><div class="fridge" aria-hidden="true">🧊</div></div></section>
       <section class="section"><div class="section-head"><h2>⚠️ 即將到期</h2><button class="text-button" data-open-inventory type="button">查看全部</button></div><div id="expiryNotice" class="notice empty"></div></section>
@@ -317,7 +316,7 @@
     </section>
   </main>
 
-  <nav class="bottom-nav" aria-label="主要導覽"><div class="nav-inner"><button class="nav-button active" data-nav="home" type="button"><span>🏠</span>冰箱</button><button class="nav-button" data-nav="inventory" type="button"><span>📦</span>庫存</button><button class="nav-button" data-nav="add" type="button"><span>➕</span>新增</button><button class="nav-button" data-nav="shopping" type="button"><span>🛒</span>採買</button></div></nav>
+  <nav class="bottom-nav" aria-label="主要導覽"><div class="nav-inner"><button class="nav-button active" data-nav="home" type="button"><span>🏠</span>冰箱</button><button class="nav-button" data-nav="inventory" type="button"><span>📦</span>庫存</button><button class="nav-button" data-nav="add" type="button"><span>➕</span>新增</button><button class="nav-button" data-nav="shopping" type="button"><span>🛒</span>採買</button><button class="nav-button" data-nav="settings" type="button"><span>⚙️</span>設定</button></div></nav>
   <dialog id="confirmDialog"><div class="dialog-content"><h2 id="dialogTitle">確認操作</h2><p id="dialogText"></p><div class="form-actions"><button class="button secondary wide" id="dialogCancel" type="button">取消</button><button class="button danger wide" id="dialogConfirm" type="button">確定</button></div></div></dialog>
   <dialog id="conflictDialog"><div class="dialog-content"><h2>本機與雲端都有變更</h2><p id="conflictText"></p><div class="form-actions"><button class="button secondary wide" id="conflictUseRemote" type="button">用雲端覆蓋本機</button><button class="button wide" id="conflictUseLocal" type="button">用本機覆蓋雲端</button></div><div class="form-actions"><button class="button secondary wide" id="conflictCancel" type="button">先不同步</button></div></div></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1093,7 +1092,13 @@
       if (event.target.closest('[data-open-inventory]')) return setView('inventory');
       if (event.target.closest('[data-go-home]')) return setView('home');
       const navTo = event.target.closest('[data-nav-to]'); if (navTo) return setView(navTo.dataset.navTo);
-      const nav = event.target.closest('[data-nav]'); if (nav) { if (nav.dataset.nav === 'add') openAdd(); else setView(nav.dataset.nav); return; }
+      const nav = event.target.closest('[data-nav]');
+      if (nav) {
+        if (nav.dataset.nav === 'add') openAdd();
+        else if (nav.dataset.nav === 'settings') openSettings();
+        else setView(nav.dataset.nav);
+        return;
+      }
 
       const editShopping = event.target.closest('[data-edit-shopping]');
       if (editShopping) { const item = loadShoppingItems().find(entry => entry.id === editShopping.dataset.editShopping); if (item) { prepareShoppingForm(item); window.scrollTo({ top: 0, behavior: 'smooth' }); } return; }
@@ -1247,7 +1252,7 @@
 
     $('dialogCancel').addEventListener('click', closeConfirm);
     $('dialogConfirm').addEventListener('click', () => { const action = confirmAction; closeConfirm(); action?.(); });
-    $('settingsButton').addEventListener('click', () => { renamingCategory = null; $('categoryManageError').textContent = ''; setView('settings'); });
+    function openSettings() { renamingCategory = null; $('categoryManageError').textContent = ''; setView('settings'); }
     async function requestNotificationPermission() {
       if (notificationPermission() !== 'default') return notificationPermission();
       try { return await Notification.requestPermission(); } catch { return notificationPermission(); }
