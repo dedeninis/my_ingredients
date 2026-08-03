@@ -364,6 +364,14 @@
         </div>
         <div class="form-actions"><button class="button secondary wide" id="cancelShoppingForm" type="button">清空欄位</button><button class="button wide" type="submit" id="saveShoppingButton">加入清單</button></div>
       </form>
+      <section class="section" style="margin-top:18px">
+        <div class="section-head"><h2>🍳 依食譜列出還缺什麼</h2></div>
+        <p class="scan-hint">輸入想煮的菜名，查一下大概需要哪些食材，並跟目前庫存比對。<b>只用來算出還缺什麼，不會顯示完整食譜或做法步驟</b>，菜名會傳送到 Google Gemini。</p>
+        <div class="field full"><label for="recipeShoppingDish">想煮的菜名</label><input id="recipeShoppingDish" placeholder="例如：馬鈴薯燉肉" /></div>
+        <div class="form-actions"><button class="button wide" id="recipeShoppingButton" type="button">查詢食材清單</button></div>
+        <p class="field-error" id="recipeShoppingError"></p>
+        <div id="recipeShoppingResult"></div>
+      </section>
       <div id="shoppingList" class="shopping-list"></div>
     </section>
 
@@ -872,6 +880,118 @@
         voiceHandlingResult = false;
         resetVoiceButton();
       }
+    }
+
+    // ---- 依食譜列出還缺什麼（採買清單）----
+    // 跟「今日料理建議」是兩個獨立功能：料理建議永遠是純規則、不接 AI（PRD 10.1 明文禁止輸出完整食譜）。
+    // 這裡是使用者主動輸入想煮的菜名，才問 Gemini 要食材清單，但畫面上只呈現「已有／還缺」的
+    // 結構化清單、拿去跟庫存比對，不顯示步驟、不以食譜形式呈現——只是把 AI 當成清單查詢工具。
+    let recipeShoppingMissing = [];
+
+    function recipeIngredientsPrompt(dishName) {
+      return [
+        `使用者想煮「${dishName}」，請列出這道菜大概需要哪些食材。`,
+        '只要食材名稱與約略數量、單位即可，不需要精確到公克的比例，也絕對不要附上任何做法、步驟或烹調說明。',
+        `unit 請從這個清單挑最接近的，挑不到就留空：${units.join('、')}。`
+      ].join('\n');
+    }
+
+    async function recognizeRecipeIngredients(dishName) {
+      if (!aiConfigured()) throw new Error('尚未設定 Gemini API 金鑰，請到設定頁填入。');
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(aiState.model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': aiState.apiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: recipeIngredientsPrompt(dishName) }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                ingredients: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
+                  name: { type: 'STRING' }, quantity: { type: 'NUMBER' }, unit: { type: 'STRING' }
+                }, required: ['name'] } }
+              },
+              required: ['ingredients']
+            }
+          }
+        })
+      });
+      if (!response.ok) throw new Error(await describeGeminiError(response));
+      const payload = await response.json();
+      const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('沒有取得食材清單，請換個菜名再試。');
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { throw new Error('食材清單格式無法讀取。'); }
+      const list = Array.isArray(parsed.ingredients) ? parsed.ingredients : [];
+      return list
+        .filter(entry => entry && typeof entry.name === 'string' && entry.name.trim())
+        .map(entry => ({
+          name: entry.name.trim(),
+          quantity: Number(entry.quantity) > 0 ? Number(entry.quantity) : 1,
+          unit: units.includes(entry.unit) ? entry.unit : ''
+        }));
+    }
+
+    // 簡單子字串比對即可，跟本機規則式料理建議的比對嚴謹度一致，不做模糊比對。
+    function ingredientAlreadyOwned(name, inventory) {
+      return inventory.some(item => daysUntil(item.expiryDate) >= 0 && (item.name.includes(name) || name.includes(item.name)));
+    }
+
+    function renderRecipeShoppingResult(dishName, have, missing) {
+      recipeShoppingMissing = missing;
+      const result = $('recipeShoppingResult');
+      const haveHtml = have.length
+        ? `<div class="section-head" style="margin-top:14px"><h2>已經有</h2></div><div class="category-list">${have.map(entry => `<span class="category-chip">✅ ${escapeHtml(entry.name)}</span>`).join('')}</div>`
+        : '';
+      const missingHtml = missing.length
+        ? `<div class="section-head" style="margin-top:14px"><h2>還缺</h2></div><div id="recipeShoppingMissingList" class="log-item-picker">${missing.map((entry, index) => `<div class="log-item-row"><input type="checkbox" id="recipeMissingCb-${index}" checked /><label for="recipeMissingCb-${index}">${escapeHtml(entry.name)}</label><input type="number" class="log-item-qty" data-missing-qty="${index}" min="0.01" step="any" value="${entry.quantity}" aria-label="${escapeHtml(entry.name)}的數量" /><span class="log-item-unit">${escapeHtml(entry.unit || '份')}</span></div>`).join('')}</div><div class="form-actions" style="margin-top:14px"><button class="button wide" id="addMissingToShoppingButton" type="button">把勾選的加入採買清單</button></div>`
+        : `<p class="scan-hint" style="margin-top:14px">目前庫存已經有「${escapeHtml(dishName)}」大概需要的食材了。</p>`;
+      result.innerHTML = `<p class="scan-hint">「${escapeHtml(dishName)}」大概需要 ${have.length + missing.length} 樣食材，已有 ${have.length} 項，還缺 ${missing.length} 項。</p>${haveHtml}${missingHtml}`;
+    }
+
+    async function handleRecipeShoppingLookup() {
+      const dishName = $('recipeShoppingDish').value.trim();
+      $('recipeShoppingError').textContent = '';
+      $('recipeShoppingResult').innerHTML = '';
+      if (!dishName) { $('recipeShoppingError').textContent = '請輸入想煮的菜名。'; return; }
+      const button = $('recipeShoppingButton');
+      button.disabled = true; button.textContent = '查詢中…';
+      try {
+        const ingredients = await recognizeRecipeIngredients(dishName);
+        if (!ingredients.length) throw new Error('沒有查到食材清單，請換個菜名再試。');
+        const inventory = loadItems();
+        const have = ingredients.filter(entry => ingredientAlreadyOwned(entry.name, inventory));
+        const missing = ingredients.filter(entry => !ingredientAlreadyOwned(entry.name, inventory));
+        renderRecipeShoppingResult(dishName, have, missing);
+      } catch (error) {
+        $('recipeShoppingError').textContent = error.message;
+      } finally {
+        button.disabled = false; button.textContent = '查詢食材清單';
+      }
+    }
+
+    function addMissingIngredientsToShopping() {
+      const dishName = $('recipeShoppingDish').value.trim();
+      const rows = [...document.querySelectorAll('#recipeShoppingMissingList .log-item-row')];
+      const toAdd = [];
+      rows.forEach((row, index) => {
+        if (!row.querySelector('input[type="checkbox"]').checked) return;
+        const entry = recipeShoppingMissing[index];
+        const qtyInput = row.querySelector('[data-missing-qty]');
+        const quantity = Number(qtyInput.value) > 0 ? Number(qtyInput.value) : 1;
+        toAdd.push({
+          id: crypto.randomUUID(), name: entry.name, quantity, unit: entry.unit || '份',
+          note: `依食譜查詢：${dishName}`, status: 'pending', inventoryDraftId: null,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+        });
+      });
+      if (!toAdd.length) { showToast('沒有勾選任何項目'); return; }
+      saveShoppingItems([...loadShoppingItems(), ...toAdd]);
+      showToast(`已加入 ${toAdd.length} 項到採買清單`);
+      $('recipeShoppingResult').innerHTML = '';
+      $('recipeShoppingDish').value = '';
+      renderShopping();
     }
 
     // ---- 美食日誌 ----
@@ -1953,6 +2073,7 @@
       if (event.target.closest('[data-open-scan]')) return openScan();
       if (event.target.closest('[data-open-photo]')) return openPhoto();
       if (event.target.closest('[data-open-voice]')) return openVoice();
+      if (event.target.closest('#addMissingToShoppingButton')) return addMissingIngredientsToShopping();
       const mode = event.target.closest('[data-mode]'); if (mode) return setAddMode(mode.dataset.mode);
       const photoAdd = event.target.closest('[data-photo-add]');
       if (photoAdd) {
@@ -2211,6 +2332,7 @@
     $('photoCameraButton').addEventListener('click', () => $('photoFileCamera').click());
     $('photoGalleryButton').addEventListener('click', () => $('photoFileGallery').click());
     $('voiceStartButton').addEventListener('click', startVoiceRecognition);
+    $('recipeShoppingButton').addEventListener('click', handleRecipeShoppingLookup);
     async function handlePhotoChange(event) {
       const file = event.target.files?.[0];
       event.target.value = '';
