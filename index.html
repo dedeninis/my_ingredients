@@ -278,7 +278,7 @@
       <section class="section"><div class="section-head"><h2>🍳 今日料理建議</h2></div><button class="suggestion-entry" data-nav-to="suggestion" type="button"><span><b id="suggestionHeadline">看看現有食材可以做什麼</b><small id="suggestionSubline">依冰箱裡的食材給建議</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>📓 美食日誌</h2><button class="text-button" data-nav-to="log" type="button">查看全部</button></div><button class="log-preview" data-nav-to="log" type="button"><span class="log-preview-thumb" id="homeLogThumb">📓</span><span class="log-preview-info"><b id="homeLogHeadline">還沒有日誌</b><small id="homeLogSubline">用掉食材做完一道菜後，可以拍照記下來</small></span><span class="chevron">›</span></button></section>
       <section class="section"><div class="section-head"><h2>依存放位置查看</h2></div><div class="locations"><button class="location" data-location="冷藏" type="button"><span class="emoji">🧊</span><b>冷藏</b><small id="countCold">0 項</small></button><button class="location" data-location="冷凍" type="button"><span class="emoji">❄️</span><b>冷凍</b><small id="countFrozen">0 項</small></button><button class="location" data-location="常溫" type="button"><span class="emoji">🏠</span><b>常溫</b><small id="countRoom">0 項</small></button></div></section>
-      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-open-photo type="button"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" type="button" disabled title="下一階段開發"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
+      <section class="section"><div class="section-head"><h2>快速操作</h2></div><div class="quick-actions"><button class="quick-action primary" data-open-add type="button"><span class="action-icon">➕</span><span class="action-label">手動新增食材</span></button><button class="quick-action" data-open-scan type="button"><span class="action-icon">🏷</span><span class="action-label">掃描條碼</span></button><button class="quick-action" data-open-photo type="button"><span class="action-icon">📷</span><span class="action-label">拍照辨識</span></button><button class="quick-action" data-nav-to="shopping" type="button"><span class="action-icon">🛒</span><span class="action-label">採買清單</span></button><button class="quick-action" data-open-voice type="button"><span class="action-icon">🎤</span><span class="action-label">語音新增</span></button></div></section>
     </section>
 
     <section id="inventoryView" class="view" aria-labelledby="inventoryTitle">
@@ -295,7 +295,7 @@
         <button class="mode active" data-mode="manual" type="button"><span aria-hidden="true">✍️</span>手動</button>
         <button class="mode" data-mode="barcode" type="button"><span aria-hidden="true">🏷</span>條碼</button>
         <button class="mode" data-mode="photo" type="button"><span aria-hidden="true">📷</span>拍照</button>
-        <button class="mode" data-mode="voice" type="button" disabled title="下一階段開發"><span aria-hidden="true">🎤</span>語音</button>
+        <button class="mode" data-mode="voice" type="button"><span aria-hidden="true">🎤</span>語音</button>
       </div>
       <div id="photoPanel" hidden>
         <p class="scan-hint">可以拍<b>單一食材或包裝</b>，也可以拍<b>整張購物發票</b>，系統會自行判斷。拍包裝時會試著讀出上面的有效期限。<br /><b>照片會傳送到 Google Gemini 辨識</b>，辨識完不會保存照片。</p>
@@ -313,6 +313,12 @@
           <div class="field full"><label for="manualBarcode">條碼號碼</label><input id="manualBarcode" name="manualBarcode" type="text" inputmode="numeric" autocomplete="off" placeholder="例如：4710616820089" /><span class="field-error" id="manualBarcodeError"></span></div>
           <div class="form-actions"><button class="button wide" type="submit">查詢這組條碼</button></div>
         </form>
+      </div>
+      <div id="voicePanel" hidden>
+        <p class="scan-hint" id="voiceHint">說一句話描述這項食材，例如「昨天買了兩盒雞蛋，放冷藏，十天後到期」。<br /><b>語音會傳送到瀏覽器的語音辨識服務</b>（Chrome 會送到 Google 的伺服器），辨識出的文字會再<b>傳送到 Google Gemini 解析</b>成食材資料。</p>
+        <div class="form-actions"><button class="button wide" id="voiceStartButton" type="button">🎤 按下開始說</button></div>
+        <p class="scan-hint" id="voiceTranscript"></p>
+        <p class="field-error" id="voiceError"></p>
       </div>
       <form id="foodForm" class="form-card" novalidate>
         <p id="formHint">填好基本資料後，就會儲存在這台裝置上。</p>
@@ -718,6 +724,154 @@
       const remaining = photoItems.filter(entry => !entry.added).length;
       list.innerHTML = `<p class="scan-hint">辨識到 ${photoItems.length} 項食材，還有 ${remaining} 項待加入。點一項就會帶入表單確認後儲存。這份清單會保留到你清空為止，關掉重開也還在。</p><div class="form-actions"><button class="button secondary wide" id="clearPhotoDraft" type="button">清空這份清單</button></div>`
         + photoItems.map((entry, index) => `<article class="shopping-card${entry.added ? ' is-complete' : ''}"><div class="shopping-main"><b>${escapeHtml(entry.name)}</b><span>${entry.quantity} 件${entry.added ? ' · 已加入庫存' : ''}</span></div><div class="shopping-actions">${entry.added ? '' : `<button class="small-button convert" data-photo-add="${index}" type="button">加入</button>`}</div></article>`).join('');
+    }
+
+    // ---- 語音新增（PRD 7.7）----
+    // 語音轉文字用瀏覽器內建的 SpeechRecognition，本身就需要網路把錄音送到瀏覽器背後的辨識服務
+    // （Chrome 會送到 Google），不是純本機處理。轉出來的逐字稿再交給 Gemini 解析成結構化欄位，
+    // 沿用跟 recognizePhoto() 一樣的 schema，解析完直接用 openAdd() 帶進手動表單讓使用者確認。
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let voiceRecognition = null;
+    let voiceListening = false;
+    // 收到最終逐字稿、正在等 Gemini 解析時為 true——這段期間 onend 一定會跟著觸發
+    // （辨識本身沒開 continuous，講完一句就自然結束），但不該把「解析中…」的按鈕文字蓋掉。
+    let voiceHandlingResult = false;
+
+    function voiceSupported() { return !!SpeechRecognitionCtor; }
+
+    function resetVoiceButton() {
+      const button = $('voiceStartButton');
+      if (!voiceSupported()) {
+        $('voiceHint').textContent = '這個瀏覽器不支援語音輸入（Firefox 目前不支援），請改用手動輸入。';
+        button.hidden = true;
+        return;
+      }
+      button.hidden = false;
+      button.disabled = false;
+      button.textContent = '🎤 按下開始說';
+    }
+
+    function resetVoicePanel() {
+      $('voiceTranscript').textContent = '';
+      $('voiceError').textContent = '';
+      resetVoiceButton();
+    }
+
+    function stopVoiceRecognition() {
+      voiceListening = false;
+      if (voiceRecognition) { try { voiceRecognition.abort(); } catch {} }
+    }
+
+    function voiceErrorMessage(code) {
+      switch (code) {
+        case 'not-allowed':
+        case 'permission-denied': return '沒有取得麥克風權限，請到瀏覽器設定允許後再試一次。';
+        case 'no-speech': return '沒有聽到聲音，再說一次看看。';
+        case 'network': return '語音辨識服務連線失敗，請檢查網路。';
+        case 'aborted': return '';
+        default: return `語音辨識失敗（${code}），請再試一次或改用手動輸入。`;
+      }
+    }
+
+    function startVoiceRecognition() {
+      if (!voiceSupported() || voiceListening) return;
+      $('voiceError').textContent = '';
+      $('voiceTranscript').textContent = '';
+      voiceHandlingResult = false;
+      voiceRecognition = new SpeechRecognitionCtor();
+      voiceRecognition.lang = 'zh-TW';
+      voiceRecognition.interimResults = true;
+      voiceRecognition.maxAlternatives = 1;
+      voiceListening = true;
+      $('voiceStartButton').textContent = '🔴 聆聽中…（再說完會自動結束）';
+      $('voiceStartButton').disabled = true;
+      voiceRecognition.onresult = event => {
+        const transcript = [...event.results].map(result => result[0].transcript).join('');
+        $('voiceTranscript').textContent = transcript;
+        if (event.results[event.results.length - 1].isFinal) {
+          voiceHandlingResult = true;
+          handleVoiceTranscript(transcript);
+        }
+      };
+      voiceRecognition.onerror = event => {
+        voiceListening = false;
+        const message = voiceErrorMessage(event.error);
+        if (message) $('voiceError').textContent = message;
+      };
+      voiceRecognition.onend = () => {
+        voiceListening = false;
+        if (!voiceHandlingResult) resetVoiceButton();
+      };
+      voiceRecognition.start();
+    }
+
+    function voicePrompt(transcript) {
+      return [
+        '你是食材管理 App 的語音輸入解析助手。使用者用中文口語描述剛買或現有的一項食材，',
+        '例如：「昨天買了兩盒雞蛋，放冷藏，十天後到期。」今天日期是 ' + isoToday() + '。',
+        '請從下面這句話解析出這一項食材的欄位：',
+        '1. name：食材名稱，去掉「買了」「還有」「昨天」這類口語詞，只留品名。完全聽不出品名就留空字串。',
+        '2. quantity：數量（數字），例如「兩盒」給 2。沒提到數量就給 1。',
+        `3. unit：單位，從這個清單挑最接近的：${units.join('、')}。判斷不出來就留空。`,
+        '4. storageLocation：從「冷藏、冷凍、常溫」挑一個，判斷不出來就留空。',
+        '5. expiryDate：到期日，格式 YYYY-MM-DD。使用者可能講相對日期（十天後、下週三、明天），請依今天日期換算；完全沒提到日期就留空，不要用今天日期代替。',
+        `6. category：從這個清單挑一個最接近的：${categoryNames().join('、')}。判斷不出來就留空。`,
+        '',
+        `使用者說的話：「${transcript}」`
+      ].join('\n');
+    }
+
+    async function recognizeVoice(transcript) {
+      if (!aiConfigured()) throw new Error('尚未設定 Gemini API 金鑰，請到設定頁填入，或改用手動輸入。');
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(aiState.model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': aiState.apiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: voicePrompt(transcript) }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                name: { type: 'STRING' }, quantity: { type: 'NUMBER' }, category: { type: 'STRING' },
+                unit: { type: 'STRING' }, storageLocation: { type: 'STRING' }, expiryDate: { type: 'STRING' }
+              },
+              required: ['name']
+            }
+          }
+        })
+      });
+      if (!response.ok) throw new Error(await describeGeminiError(response));
+      const payload = await response.json();
+      const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error('解析結果是空的，請再說一次。');
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { throw new Error('解析結果格式無法讀取。'); }
+      if (!parsed.name || !parsed.name.trim()) throw new Error('沒有聽出食材名稱，請再說一次或改用手動輸入。');
+      const locations = ['冷藏', '冷凍', '常溫'];
+      return {
+        name: parsed.name.trim(),
+        quantity: Number(parsed.quantity) > 0 ? Number(parsed.quantity) : 1,
+        category: categoryNames().includes(parsed.category) ? parsed.category : '',
+        unit: units.includes(parsed.unit) ? parsed.unit : '',
+        storageLocation: locations.includes(parsed.storageLocation) ? parsed.storageLocation : '',
+        expiryDate: /^\d{4}-\d{2}-\d{2}$/.test(parsed.expiryDate || '') ? parsed.expiryDate : ''
+      };
+    }
+
+    async function handleVoiceTranscript(transcript) {
+      // 辨識本身沒開 continuous，講完最後一句就會自然觸發 onend，這裡不用再手動 abort()。
+      $('voiceStartButton').textContent = '解析中…';
+      $('voiceError').textContent = '';
+      try {
+        const entry = await recognizeVoice(transcript);
+        openAdd(entry, '', { sourceKind: 'voice', notice: '從語音帶入資料，請確認或補齊欄位。' });
+      } catch (error) {
+        $('voiceError').textContent = error.message;
+      } finally {
+        voiceHandlingResult = false;
+        resetVoiceButton();
+      }
     }
 
     // ---- 美食日誌 ----
@@ -1579,7 +1733,7 @@
       $('sourcePhotoIndex').value = options.photoIndex ?? '';
       $('sourceKind').value = options.sourceKind || '';
       $('barcode').value = item?.barcode || options.barcode || '';
-      $('formEyebrow').textContent = sourceShoppingId ? '採買清單轉入' : options.sourceKind === 'photo_ai' ? '拍照辨識' : options.sourceKind === 'receipt' ? '發票辨識' : options.barcode ? '條碼掃描' : item ? '修改庫存資料' : '手動建立';
+      $('formEyebrow').textContent = sourceShoppingId ? '採買清單轉入' : options.sourceKind === 'photo_ai' ? '拍照辨識' : options.sourceKind === 'receipt' ? '發票辨識' : options.sourceKind === 'voice' ? '語音輸入' : options.barcode ? '條碼掃描' : item ? '修改庫存資料' : '手動建立';
       $('addTitle').textContent = item?.id ? '編輯食材' : '新增食材';
       $('formHint').textContent = options.notice
         || (sourceShoppingId ? '請補齊食材類型、存放位置與保存期限後再加入庫存。' : '填好基本資料後，就會儲存在這台裝置上。');
@@ -1600,14 +1754,18 @@
       document.querySelectorAll('[data-mode]').forEach(button => button.classList.toggle('active', button.dataset.mode === mode));
       $('barcodePanel').hidden = mode !== 'barcode';
       $('photoPanel').hidden = mode !== 'photo';
-      $('foodForm').hidden = mode === 'barcode' || mode === 'photo';
+      $('voicePanel').hidden = mode !== 'voice';
+      $('foodForm').hidden = mode === 'barcode' || mode === 'photo' || mode === 'voice';
       if (mode === 'barcode') startScan(); else stopScan();
       if (mode === 'photo') { $('photoError').textContent = aiConfigured() ? '' : '尚未設定 Gemini API 金鑰，請先到設定頁填入。'; renderPhotoList(); }
+      if (mode !== 'voice') stopVoiceRecognition();
+      if (mode === 'voice') resetVoicePanel();
     }
     function applyQuantityStep() { $('quantity').step = UNIT_STEPS[$('unit').value] || 'any'; }
     function openAdd(item = null, sourceShoppingId = '', options = {}) { prepareForm(item, sourceShoppingId, options); setView('add'); setAddMode('manual'); }
     function openScan() { prepareForm(); setView('add'); setAddMode('barcode'); }
     function openPhoto() { prepareForm(); setView('add'); setAddMode('photo'); }
+    function openVoice() { prepareForm(); setView('add'); setAddMode('voice'); }
 
     // 掃描：優先用瀏覽器內建的 BarcodeDetector（Android Chrome 有，iOS Safari 沒有），
     // 不可用時退回手動輸入條碼號碼，不引入額外的解碼函式庫。
@@ -1794,6 +1952,7 @@
       if (event.target.closest('[data-open-add]')) return openAdd();
       if (event.target.closest('[data-open-scan]')) return openScan();
       if (event.target.closest('[data-open-photo]')) return openPhoto();
+      if (event.target.closest('[data-open-voice]')) return openVoice();
       const mode = event.target.closest('[data-mode]'); if (mode) return setAddMode(mode.dataset.mode);
       const photoAdd = event.target.closest('[data-photo-add]');
       if (photoAdd) {
@@ -2051,6 +2210,7 @@
     });
     $('photoCameraButton').addEventListener('click', () => $('photoFileCamera').click());
     $('photoGalleryButton').addEventListener('click', () => $('photoFileGallery').click());
+    $('voiceStartButton').addEventListener('click', startVoiceRecognition);
     async function handlePhotoChange(event) {
       const file = event.target.files?.[0];
       event.target.value = '';
