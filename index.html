@@ -1050,8 +1050,8 @@
       $('logDetailContent').innerHTML = `
         <article class="detail-panel">
           <div id="logDetailPhotoSlot"></div>
-          <div class="suggestion-title" style="margin-bottom:5px"><h2 style="margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(entry.dishName)}</h2>${recipeSearchLinks(entry.dishName)}</div>
-          <div class="suggestion-title" style="margin-bottom:14px"><span class="expiry normal" style="text-align:left">${formatDate(entry.date)}</span><button class="pill-button log-share-icon" id="logShareButton" data-share-log="${entry.id}" type="button" hidden aria-label="分享這篇日誌" title="分享">分享</button></div>
+          <div class="suggestion-title" style="margin-bottom:5px"><h2 style="margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(entry.dishName)}</h2><button class="pill-button log-share-icon" id="logShareButton" data-share-log="${entry.id}" type="button" hidden aria-label="分享這篇日誌" title="分享">分享</button></div>
+          <div class="suggestion-title" style="margin-bottom:14px"><span class="expiry normal" style="text-align:left">${formatDate(entry.date)}</span>${recipeSearchLinks(entry.dishName)}</div>
           <div class="section-head" style="margin-top:18px"><h2>用了哪些食材</h2></div>
           <div class="category-list">${itemsHtml}</div>
           ${entry.note ? `<div class="section-head" style="margin-top:18px"><h2>心得筆記</h2></div><p class="suggestion-note" style="white-space:pre-wrap">${escapeHtml(entry.note)}</p>` : ''}
