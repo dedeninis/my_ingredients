@@ -448,25 +448,11 @@
       </section>
       <section class="settings-group">
         <h2>拍照辨識（Google Gemini）</h2>
-        <div class="form-grid">
-          <div class="field full"><label for="aiApiKey">API 金鑰</label><input id="aiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="貼上 Gemini API 金鑰" /></div>
-          <div class="field full"><label for="aiModel">模型</label><input id="aiModel" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.5-flash" /></div>
-        </div>
-        <div class="form-actions"><button class="button secondary wide" id="clearAiButton" type="button">清除設定</button><button class="button wide" id="saveAiButton" type="button">儲存</button></div>
-        <div class="form-actions"><button class="button secondary wide" id="testAiButton" type="button">測試連線並列出可用模型</button></div>
-        <div class="setting-row"><div><b>目前狀態</b><p id="aiStatus"></p></div></div>
-        <div id="aiModelList" class="category-list"></div>
-        <p class="warning-note">⚠️ 使用發票辨識時，<b>照片會傳送到 Google</b> 進行辨識。金鑰只存在這台裝置，<b>不會被同步到 Gist</b>，換裝置要重新輸入。建議到 Google Cloud Console 設定參照網址限制與每日配額上限，萬一金鑰外流才有損害上限。</p>
+        <button class="suggestion-entry" data-nav-to="aiSettings" type="button"><span><b>API 金鑰與模型設定</b><small id="aiStatusPreview"></small></span><span class="chevron">›</span></button>
       </section>
       <section class="settings-group">
         <h2>雲端同步（GitHub Gist）</h2>
-        <div class="form-grid">
-          <div class="field full"><label for="gistId">Gist ID</label><input id="gistId" type="text" placeholder="例如：a1b2c3d4e5f6..." autocomplete="off" spellcheck="false" /></div>
-          <div class="field full"><label for="gistToken">存取權杖 Token</label><input id="gistToken" type="password" placeholder="貼上只勾選 gist 權限的 token" autocomplete="off" spellcheck="false" /></div>
-        </div>
-        <div class="form-actions"><button class="button secondary wide" id="saveSyncButton" type="button">儲存設定</button><button class="button wide" id="syncNowButton" type="button">立即同步</button></div>
-        <div class="setting-row"><div><b>同步狀態</b><p id="syncStatus"></p></div><button class="small-button" id="clearSyncButton" type="button">清除設定</button></div>
-        <p class="warning-note">⚠️ Secret Gist <b>不等於私密</b> —— 任何取得該網址的人都能看到你的庫存內容。權杖只存在這台裝置，不會上傳，換裝置需要重新貼一次。兩台裝置同時修改時會跳出選擇，不會自動覆蓋。</p>
+        <button class="suggestion-entry" data-nav-to="syncSettings" type="button"><span><b>Gist ID 與存取權杖</b><small id="syncStatusPreview"></small></span><span class="chevron">›</span></button>
       </section>
       <section class="settings-group">
         <h2>關於</h2>
@@ -485,6 +471,34 @@
         <div id="knownList" class="category-list"></div>
         <div class="setting-row"><div><b>美食日誌</b><p id="logDataCount"></p></div><button class="button danger" id="clearLogButton" type="button">清除日誌</button></div>
         <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。日誌的照片存在本機、不會跟著同步。</p>
+      </section>
+    </section>
+
+    <section id="aiSettingsView" class="view" aria-labelledby="aiSettingsTitle">
+      <header class="topbar"><div><p class="eyebrow">設定 ‧ 拍照辨識</p><h1 id="aiSettingsTitle">拍照辨識（Google Gemini）</h1></div><button class="icon-button" data-nav-to="settings" type="button" aria-label="回到設定">←</button></header>
+      <section class="settings-group">
+        <div class="form-grid">
+          <div class="field full"><label for="aiApiKey">API 金鑰</label><input id="aiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="貼上 Gemini API 金鑰" /></div>
+          <div class="field full"><label for="aiModel">模型</label><input id="aiModel" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.5-flash" /></div>
+        </div>
+        <div class="form-actions"><button class="button secondary wide" id="clearAiButton" type="button">清除設定</button><button class="button wide" id="saveAiButton" type="button">儲存</button></div>
+        <div class="form-actions"><button class="button secondary wide" id="testAiButton" type="button">測試連線並列出可用模型</button></div>
+        <div class="setting-row"><div><b>目前狀態</b><p id="aiStatus"></p></div></div>
+        <div id="aiModelList" class="category-list"></div>
+        <p class="warning-note">⚠️ 使用發票辨識時，<b>照片會傳送到 Google</b> 進行辨識。金鑰只存在這台裝置，<b>不會被同步到 Gist</b>，換裝置要重新輸入。建議到 Google Cloud Console 設定參照網址限制與每日配額上限，萬一金鑰外流才有損害上限。</p>
+      </section>
+    </section>
+
+    <section id="syncSettingsView" class="view" aria-labelledby="syncSettingsTitle">
+      <header class="topbar"><div><p class="eyebrow">設定 ‧ 雲端同步</p><h1 id="syncSettingsTitle">雲端同步（GitHub Gist）</h1></div><button class="icon-button" data-nav-to="settings" type="button" aria-label="回到設定">←</button></header>
+      <section class="settings-group">
+        <div class="form-grid">
+          <div class="field full"><label for="gistId">Gist ID</label><input id="gistId" type="text" placeholder="例如：a1b2c3d4e5f6..." autocomplete="off" spellcheck="false" /></div>
+          <div class="field full"><label for="gistToken">存取權杖 Token</label><input id="gistToken" type="password" placeholder="貼上只勾選 gist 權限的 token" autocomplete="off" spellcheck="false" /></div>
+        </div>
+        <div class="form-actions"><button class="button secondary wide" id="saveSyncButton" type="button">儲存設定</button><button class="button wide" id="syncNowButton" type="button">立即同步</button></div>
+        <div class="setting-row"><div><b>同步狀態</b><p id="syncStatus"></p></div><button class="small-button" id="clearSyncButton" type="button">清除設定</button></div>
+        <p class="warning-note">⚠️ Secret Gist <b>不等於私密</b> —— 任何取得該網址的人都能看到你的庫存內容。權杖只存在這台裝置，不會上傳，換裝置需要重新貼一次。兩台裝置同時修改時會跳出選擇，不會自動覆蓋。</p>
       </section>
     </section>
   </main>
@@ -1702,11 +1716,14 @@
     function updateSyncStatusText() {
       const el = $('syncStatus');
       if (!el) return;
-      el.textContent = syncing ? '同步中…'
+      const text = syncing ? '同步中…'
         : !syncConfigured() ? '尚未設定，資料只會留在這台裝置。'
         : syncState.lastError ? `上次同步失敗：${syncState.lastError}`
         : hasLocalChanges() ? `有尚未上傳的變更（上次同步 ${formatDateTime(syncState.lastSyncedAt)}）`
         : `已同步（${formatDateTime(syncState.lastSyncedAt)}）`;
+      el.textContent = text;
+      const preview = $('syncStatusPreview');
+      if (preview) preview.textContent = text;
     }
 
     // ---- 到期提醒（PRD 11）----
@@ -1780,7 +1797,7 @@
 
     // dataManage 沿用 renderSettings：清除按鈕搬到子頁後，計數與食材記憶清單這些欄位還是同一批，
     // renderSettings 本來就會全部重新填一次，沒有理由另外拆一個函式。
-    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, dataManage: renderSettings, detail: renderDetail, suggestion: renderSuggestions, log: renderLogList, logDetail: renderLogDetail };
+    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, dataManage: renderSettings, aiSettings: renderSettings, syncSettings: renderSettings, detail: renderDetail, suggestion: renderSuggestions, log: renderLogList, logDetail: renderLogDetail };
     function setView(view) {
       if (view !== 'add') stopScan();   // 離開新增頁一定要關掉相機
       document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -2028,6 +2045,7 @@
       $('aiApiKey').value = aiState.apiKey;
       $('aiModel').value = aiState.model;
       $('aiStatus').textContent = aiConfigured() ? `已設定，使用模型 ${aiState.model}。` : '尚未設定，拍照辨識無法使用。';
+      $('aiStatusPreview').textContent = aiConfigured() ? `已設定，使用 ${aiState.model}` : '尚未設定金鑰';
       updateSyncStatusText();
       $('inventoryDataCount').textContent = `目前共有 ${loadItems().length} 項食材。`;
       $('shoppingDataCount').textContent = `目前共有 ${loadShoppingItems().length} 項採買項目。`;
