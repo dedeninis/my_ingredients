@@ -444,13 +444,7 @@
       </section>
       <section class="settings-group">
         <h2>資料管理</h2>
-        <div class="setting-row"><div><b>庫存資料</b><p id="inventoryDataCount"></p></div><button class="button danger" id="clearInventoryButton" type="button">清除庫存</button></div>
-        <div class="setting-row"><div><b>採買清單</b><p id="shoppingDataCount"></p></div><button class="button danger" id="clearShoppingButton" type="button">清除清單</button></div>
-        <div class="setting-row"><div><b>條碼記錄</b><p id="productDataCount"></p></div><button class="button danger" id="clearProductsButton" type="button">清除條碼</button></div>
-        <div class="setting-row"><div><b>食材記憶</b><p id="knownDataCount"></p></div><button class="button danger" id="clearKnownButton" type="button">全部清除</button></div>
-        <div id="knownList" class="category-list"></div>
-        <div class="setting-row"><div><b>美食日誌</b><p id="logDataCount"></p></div><button class="button danger" id="clearLogButton" type="button">清除日誌</button></div>
-        <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。日誌的照片存在本機、不會跟著同步。</p>
+        <button class="suggestion-entry" data-nav-to="dataManage" type="button"><span><b>清除本機資料</b><small>庫存、採買清單、條碼記錄、食材記憶、美食日誌</small></span><span class="chevron">›</span></button>
       </section>
       <section class="settings-group">
         <h2>拍照辨識（Google Gemini）</h2>
@@ -478,6 +472,19 @@
         <h2>關於</h2>
         <div class="setting-row"><div><b>版本</b><p>V1.0（本機版）</p></div></div>
         <div class="setting-row"><div><b>隱私說明</b><p>庫存、採買清單與偏好設定都保存在這台裝置的本機儲存空間，不需要帳號，也不會上傳到伺服器。</p></div></div>
+      </section>
+    </section>
+
+    <section id="dataManageView" class="view" aria-labelledby="dataManageTitle">
+      <header class="topbar"><div><p class="eyebrow">設定 ‧ 資料管理</p><h1 id="dataManageTitle">資料管理</h1></div><button class="icon-button" data-nav-to="settings" type="button" aria-label="回到設定">←</button></header>
+      <section class="settings-group">
+        <div class="setting-row"><div><b>庫存資料</b><p id="inventoryDataCount"></p></div><button class="button danger" id="clearInventoryButton" type="button">清除庫存</button></div>
+        <div class="setting-row"><div><b>採買清單</b><p id="shoppingDataCount"></p></div><button class="button danger" id="clearShoppingButton" type="button">清除清單</button></div>
+        <div class="setting-row"><div><b>條碼記錄</b><p id="productDataCount"></p></div><button class="button danger" id="clearProductsButton" type="button">清除條碼</button></div>
+        <div class="setting-row"><div><b>食材記憶</b><p id="knownDataCount"></p></div><button class="button danger" id="clearKnownButton" type="button">全部清除</button></div>
+        <div id="knownList" class="category-list"></div>
+        <div class="setting-row"><div><b>美食日誌</b><p id="logDataCount"></p></div><button class="button danger" id="clearLogButton" type="button">清除日誌</button></div>
+        <p class="warning-note">⚠️ 資料只存在這台裝置，App 內沒有備份或雲端同步。裝置遺失、清除瀏覽器資料都可能造成資料永久遺失。日誌的照片存在本機、不會跟著同步。</p>
       </section>
     </section>
   </main>
@@ -1771,7 +1778,9 @@
     }
     function closeConfirm() { $('confirmDialog').close(); confirmAction = null; }
 
-    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, detail: renderDetail, suggestion: renderSuggestions, log: renderLogList, logDetail: renderLogDetail };
+    // dataManage 沿用 renderSettings：清除按鈕搬到子頁後，計數與食材記憶清單這些欄位還是同一批，
+    // renderSettings 本來就會全部重新填一次，沒有理由另外拆一個函式。
+    const renderers = { home: renderHome, inventory: renderInventory, shopping: renderShopping, settings: renderSettings, dataManage: renderSettings, detail: renderDetail, suggestion: renderSuggestions, log: renderLogList, logDetail: renderLogDetail };
     function setView(view) {
       if (view !== 'add') stopScan();   // 離開新增頁一定要關掉相機
       document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
